@@ -1,0 +1,711 @@
+{% extends "base.html" %}
+{% set page_title = "Karaokê RJ • Aluguel, Venda e Catálogo" %}
+{% set page_description = "Som profissional, microfones sem fio e um catálogo com mais de 27.000 músicas. Venda, aluguel e manutenção para festas, resenhas e eventos corporativos." %}
+
+{% block page_css %}
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/home.css') }}">
+{% endblock %}
+
+{% block content %}
+    <!-- HEADER -->
+    <header class="k-header">
+        <div class="k-container k-header__inner">
+            <a class="k-brand" href="/">
+                <img src="{{ request.url_for('static', path='img/minha-logo.png') }}" alt="Logo Karaokê RJ"
+                     loading="lazy" decoding="async">
+                <div class="k-brand__name">
+                    <b>Karaokê RJ</b>
+                    <span>Venda • Aluguel • Manutenção</span>
+                </div>
+            </a>
+
+            <nav class="k-nav" aria-label="Navegação principal">
+                <a href="#servicos">Serviços</a>
+                <a href="#aluguel">Aluguel</a>
+                <a href="#vendas">Vendas</a>
+                <a href="/catalogo">Catálogo</a>
+            </nav>
+
+            <div class="k-actions">
+                <a class="k-btn k-btn--primary" href="/catalogo" title="Abrir catálogo">
+                    <i class="bi bi-music-note-list"></i>
+                    Catálogo
+                </a>
+                <a class="k-btn k-btn--primary k-btn--whats"
+                   href="https://wa.me/5521996504516?text=%F0%9F%8E%A4%20Ol%C3%A1!%20Estou%20no%20site%20da%20Karaok%C3%AA%20RJ%20e%20quero%20alugar%20um%20equipamento."
+                   target="_blank" rel="noopener">
+                    <i class="bi bi-whatsapp"></i>
+                    Orçar no WhatsApp
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero" aria-label="Apresentação">
+        <div class="k-container">
+            <div class="hero__frame">
+                <div class="hero__bg" aria-hidden="true">
+                    <video class="hero__video" autoplay muted loop playsinline
+                           poster="{{ request.url_for('static', path='media/hero_poster.jpg') }}">
+                        <source src="{{ request.url_for('static', path='media/hero.mp4') }}" type="video/mp4">
+                    </video>
+                    <div class="hero__overlay"></div>
+                </div>
+
+                <div class="hero__content">
+                    <div class="hero__kicker">
+                        <i class="bi bi-stars"></i>
+                        Experiência premium para festas e eventos
+                    </div>
+
+                    <h1 class="hero__title">
+                        Sua festa vira <span class="em">show</span>.
+                    </h1>
+
+                    <p class="hero__lead">
+                        Som profissional, microfones sem fio e um catálogo com <b>+27.000 músicas</b>.
+                        Alugue, compre ou faça manutenção com quem entrega tudo pronto para usar.
+                    </p>
+
+                    <div class="hero__ctas">
+                        <a class="k-btn" href="/catalogo">
+                            <i class="bi bi-search"></i>Catálogo Virtual
+                        </a>
+                        <a class="k-btn k-btn--primary" href="#aluguel">
+                            <i class="bi bi-chevron-down"></i>Serviços
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Conteúdo -->
+    <main class="main-light">
+
+        <!-- SERVIÇOS -->
+        <section class="k-section" id="servicos">
+            <div class="k-container">
+                <div class="k-section__head">
+                    <div>
+                        <h2 class="k-section__title">O que a gente faz</h2>
+                        <p class="k-section__sub">Escolha a modalidade e fale com a gente no WhatsApp para fechar
+                            rápido.</p>
+                    </div>
+                </div>
+
+                <div class="k-grid k-grid--3">
+                    <article class="k-card">
+                        <div class="k-card__body">
+                            <div class="k-card__icon"><i class="bi bi-truck"></i></div>
+                            <h3 class="k-card__title">Aluguel para eventos</h3>
+                            <p class="k-card__text">
+                                Pacotes com catálogo 27.000 músicas, 2 microfones sem fio, som Residencial ou
+                                Profissional.
+                                Equipamento completo para o seu evento.
+                            </p>
+                        </div>
+                    </article>
+
+                    <article class="k-card">
+                        <div class="k-card__body">
+                            <div class="k-card__icon"><i class="bi bi-bag-check"></i></div>
+                            <h3 class="k-card__title">Venda de equipamentos</h3>
+                            <p class="k-card__text">
+                                Kits prontos para karaokê e fliperama, com orientação e instalação.
+                                Somos os únicos no Brasil com montagem totalmente zerada.
+                            </p>
+                        </div>
+                    </article>
+
+                    <article class="k-card">
+                        <div class="k-card__body">
+                            <div class="k-card__icon"><i class="bi bi-wrench-adjustable"></i></div>
+                            <h3 class="k-card__title">Manutenção</h3>
+                            <p class="k-card__text">Reparo, revisão e upgrade para manter seu equipamento sempre
+                                redondo.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ALUGUEL (CARROSSEL) -->
+        <section id="aluguel" class="section aluguel">
+            <div class="container">
+                <header class="section-head">
+                    <h2 class="section-title">Aluguel de Equipamentos</h2>
+                    <p class="section-subtitle">A solução completa para cantar, jogar, dançar, animar e
+                        impressionar.</p>
+                </header>
+
+                <div class="aluguel-carousel" data-carousel="aluguel">
+                    <button class="aluguel-arrow is-left" type="button" aria-label="Voltar">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+
+                    <div class="aluguel-viewport">
+                        <div class="aluguel-track" id="aluguelTrack">
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/aluguel/aluguel_basico.jpg" alt="The Voice Básico"
+                                         loading="lazy" decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">The Voice Básico</h3>
+                                <p class="aluguel-desc">Catálogo com mais de 27 mil músicas, letras sincronizadas e
+                                    sistema
+                                    Residencial.</p>
+                                <ul>
+                                    <li>Som Integrado Residencial</li>
+                                    <li>Bluetooth Integrado</li>
+                                    <li>Tela de 17 Polegadas</li>
+                                    <li>2 Microfones Sem Fio</li>
+                                    <li>Catálogo Físico e Digital</li>
+                                    <li>Perfeito para Ambientes Internos</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=%F0%9F%8E%A4%20Ol%C3%A1!%20Estou%20no%20site%20da%20Karaok%C3%AA%20RJ%20e%20quero%20alugar%20um%20The%20Voice%20B%C3%A1sico."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Agendar Agora</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/aluguel/aluguel_jbl.jpg" alt="The Voice JBL"
+                                         loading="lazy" decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">The Voice JBL</h3>
+                                <p class="aluguel-desc">Catálogo com mais de 27 mil músicas, letras sincronizadas e
+                                    sistema
+                                    Residencial.</p>
+                                <ul>
+                                    <li>Caixa JBL Profissional</li>
+                                    <li>Bluetooth Integrado</li>
+                                    <li>Tela de 32 Polegadas</li>
+                                    <li>2 Microfones Sem Fio</li>
+                                    <li>Catálogo Físico e Digital</li>
+                                    <li>Perfeito para Ambientes Internos e Externos</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=%F0%9F%8E%A4%20Ol%C3%A1!%20Estou%20no%20site%20da%20Karaok%C3%AA%20RJ%20e%20quero%20alugar%20um%20The%20Voice%20JBL."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Agendar Agora</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/aluguel/aluguel_fliperama.jpg" alt="Fliperama Retrô"
+                                         loading="lazy" decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">Fliperama Retrô</h3>
+                                <p class="aluguel-desc">Diversão extra para crianças e adultos — sucesso garantido.</p>
+                                <ul>
+                                    <li>+4 mil Jogos.</li>
+                                    <li>Tela de 22" integrada</li>
+                                    <li>2 comandos ópticos, para melhor performance</li>
+                                    <li>Efeito de luz de LED</li>
+                                    <li>Estampa temática</li>
+                                    <li>Perfeito para Ambientes Internos e Externos</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=%F0%9F%8E%A4%20Ol%C3%A1!%20Estou%20no%20site%20da%20Karaok%C3%AA%20RJ%20e%20quero%20alugar%20um%20Fliperama."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Agendar Agora</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/aluguel/heineken.jpg" alt="The Voice Heineken"
+                                         loading="lazy" decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">The Voice Heineken</h3>
+                                <p class="aluguel-desc">Catálogo com mais de 27 mil músicas, letras sincronizadas e
+                                    sistema
+                                    Profissional.</p>
+                                <ul>
+                                    <li>Som Integrado JBL</li>
+                                    <li>Tela de 17 Polegadas</li>
+                                    <li>Bluetooth Integrado</li>
+                                    <li>2 Microfones Sem Fio</li>
+                                    <li>Catálogo Físico e Digital</li>
+                                    <li>Gabinete diferenciado</li>
+                                    <li>Perfeito para ambientes internos e externos com menos espaço</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=%F0%9F%8E%A4%20Ol%C3%A1!%20Estou%20no%20site%20da%20Karaok%C3%AA%20RJ%20e%20quero%20alugar%20um%20The%20Voice%20Heineken."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Agendar Agora</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/aluguel/aluguel_just.jpg" alt="Just Dance"
+                                         loading="lazy" decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">Just Dance</h3>
+                                <p class="aluguel-desc">Just Dance é a franquia de jogos de ritmo e dança mais popular
+                                    do
+                                    mundo.</p>
+                                <ul>
+                                    <li>Básico, somente console.</li>
+                                    <li>Intermediário - TV com suporte + console</li>
+                                    <li>Plus - TV com suporte + console + JBL</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=%F0%9F%8E%A4%20Ol%C3%A1!%20Estou%20no%20site%20da%20Karaok%C3%AA%20RJ%20e%20quero%20alugar%20um%20Just%20Dance."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Agendar Agora</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                        </div>
+                    </div>
+
+                    <button class="aluguel-arrow is-right" type="button" aria-label="Avançar">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VENDAS (CARROSSEL) -->
+        <section id="vendas" class="section aluguel">
+            <div class="container">
+                <header class="section-head">
+                    <h2 class="section-title">Venda de Equipamentos</h2>
+                    <p class="section-subtitle">A solução mais completa com diversão, design e experiência em um só
+                        produto.</p>
+                </header>
+
+                <div class="aluguel-carousel" data-carousel="vendas">
+                    <button class="aluguel-arrow is-left" type="button" aria-label="Voltar">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+
+                    <div class="aluguel-viewport">
+                        <div class="aluguel-track" id="vendasTrack">
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/portatil/19.png" alt="Portátil" loading="lazy"
+                                         decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">Portátil</h3>
+                                <p class="aluguel-desc">Catálogo com 12 ou 27 mil músicas. Perfeito para ambientes
+                                    residenciais.</p>
+                                <ul>
+                                    <li>Necessário TV</li>
+                                    <li>Necessário Caixa Amplificada</li>
+                                    <li>2 Microfones com fio</li>
+                                    <li>Todos os cabos</li>
+                                    <li>Catálogo físico e digital</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=%F0%9F%8E%A4%20Ol%C3%A1!%20quero%20comprar%20um%20equipamento%20Port%C3%A1til."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Orçar no WhatsApp</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/jukebox/27.png" alt="Jukebox Premium" loading="lazy"
+                                         decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">Jukebox Premium</h3>
+                                <p class="aluguel-desc">Catálogo com 12 ou 27 mil músicas. Perfeito para locadores.</p>
+                                <ul>
+                                    <li>Tela de 17"</li>
+                                    <li>Som premium</li>
+                                    <li>2 Microfones com fio</li>
+                                    <li>Gabinete personalizado</li>
+                                    <li>Catálogo físico e digital</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=Quero%20comprar%20um%20Jukebox%20Premium."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Orçar no WhatsApp</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/jukebox/26.png" alt="Jukebox JBL" loading="lazy"
+                                         decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">Jukebox JBL</h3>
+                                <p class="aluguel-desc">Catálogo com 12 ou 27 mil músicas. Perfeito para locadores e
+                                    comércio.</p>
+                                <ul>
+                                    <li>Tela de 17"</li>
+                                    <li>Som JBL</li>
+                                    <li>2 Microfones com fio</li>
+                                    <li>Gabinete personalizado</li>
+                                    <li>Catálogo físico e digital</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=Quero%20comprar%20um%20Jukebox%20JBL."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Orçar no WhatsApp</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/aluguel/aluguel_fliperama.jpg" alt="Fliperama Retrô"
+                                         loading="lazy" decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">Fliperama Retrô</h3>
+                                <p class="aluguel-desc">Diversão extra para crianças e adultos — sucesso garantido.</p>
+                                <ul>
+                                    <li>+4 mil jogos</li>
+                                    <li>Tela 22"</li>
+                                    <li>2 comandos ópticos</li>
+                                    <li>Efeito de luz LED</li>
+                                    <li>Estampa temática</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=Quero%20comprar%20um%20Fliperama."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Orçar no WhatsApp</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/aluguel/heineken.jpg" alt="The Voice Heineken"
+                                         loading="lazy" decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">The Voice Heineken</h3>
+                                <p class="aluguel-desc">Catálogo com mais de 27 mil músicas, letras sincronizadas e
+                                    sistema profissional.</p>
+                                <ul>
+                                    <li>Som integrado JBL</li>
+                                    <li>Tela 17"</li>
+                                    <li>Bluetooth integrado</li>
+                                    <li>2 microfones sem fio</li>
+                                    <li>Catálogo físico e digital</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=Quero%20comprar%20um%20The%20Voice%20Heineken."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none dsm-inline">Orçar no WhatsApp</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                            <article class="aluguel-card">
+                                <div class="aluguel-media">
+                                    <img src="/static/img/fotos/iphone_guitarra/5.png" alt="iPhone" loading="lazy"
+                                         decoding="async">
+                                </div>
+                                <h3 class="aluguel-name">iPhone</h3>
+                                <p class="aluguel-desc">Catálogo com 12 ou 27 mil músicas. Perfeito para locadores e
+                                    comércio.</p>
+                                <ul>
+                                    <li>Som integrado</li>
+                                    <li>Tela 17"</li>
+                                    <li>Bluetooth integrado</li>
+                                    <li>Microfones sem fio</li>
+                                    <li>Catálogo físico e digital</li>
+                                </ul>
+                                <div class="aluguel-cta">
+                                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                                       href="https://wa.me/5521996504516?text=Quero%20comprar%20um%20Iphone."
+                                       target="_blank" rel="noopener">
+                                        <i class="bi bi-whatsapp"></i>
+                                        <span class="d-none d-sm-inline">Orçar no WhatsApp</span>
+                                    </a>
+                                </div>
+                            </article>
+
+                        </div>
+                    </div>
+
+                    <button class="aluguel-arrow is-right" type="button" aria-label="Avançar">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- PROVAS / LOGOS -->
+        <section class="k-section" id="provas">
+            <div class="k-container">
+                <div class="k-section__head">
+                    <div>
+                        <h2 class="k-section__title">Confiança de clientes e eventos</h2>
+                        <p class="k-section__sub">
+                            Referência em eventos corporativos e grandes festivais, atendendo marcas líderes no Brasil.
+                        </p>
+                    </div>
+                    <a class="k-btn" href="https://www.instagram.com/karaokerj/?hl=pt-br" target="_blank"
+                       rel="noopener">
+                        <i class="bi bi-instagram"></i> Instagram
+                    </a>
+                </div>
+
+                <div class="k-grid k-grid--3">
+                    <article class="k-card">
+                        <div class="k-card__body">
+                            <div class="k-card__icon"><i class="bi bi-people"></i></div>
+                            <h3 class="k-card__title">Evento em família</h3>
+                            <div class="star">★★★★★</div>
+                            <p class="k-card__text">“Parecia palco de show! A galera cantou a noite inteira e os vídeos
+                                ficaram lindos.”</p>
+                        </div>
+                    </article>
+                    <article class="k-card">
+                        <div class="k-card__body">
+                            <div class="k-card__icon"><i class="bi bi-mic"></i></div>
+                            <h3 class="k-card__title">Qualidade de voz</h3>
+                            <div class="star">★★★★★</div>
+                            <p class="k-card__text">Microfones sem fio e ajuste de som para a voz “aparecer”.</p>
+                        </div>
+                    </article>
+                    <article class="k-card">
+                        <div class="k-card__body">
+                            <div class="k-card__icon"><i class="bi bi-music-note-beamed"></i></div>
+                            <h3 class="k-card__title">Catálogo gigante</h3>
+                            <div class="star">★★★★★</div>
+                            <p class="k-card__text">Busca rápida por código, artista, música e filtros por
+                                tipo/plano.</p>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- LOGO GRANDES CLIENTES -->
+        <section class="clientes">
+            <div class="container">
+                <h2 class="clientes-title">Quem já cantou com a gente</h2>
+
+                <div class="clientes-marquee">
+                    <div class="clientes-track">
+
+                        <img src="/static/img/logos/gloob.png" alt="Gloob" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/netflix.png" alt="Netflix" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/bradesco.png" alt="Bradesco" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/coca_cola.png" alt="Coca Cola" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/feira-sao-cristovao.png" alt="Ambev" loading="lazy"
+                             decoding="async">
+                        <img src="/static/img/logos/tim.png" alt="TIM" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/vivo.png" alt="Vivo" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/rock.png" alt="Rock in Rio" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/totvs.png" alt="TOTVS" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/som-livre.png" alt="Som Livre" loading="lazy" decoding="async">
+
+                        <!-- duplicado para efeito infinito -->
+                        <img src="/static/img/logos/gloob.png" alt="Gloob" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/netflix.png" alt="Netflix" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/bradesco.png" alt="Bradesco" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/coca_cola.png" alt="Coca Cola" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/feira-sao-cristovao.png" alt="Feira" loading="lazy"
+                             decoding="async">
+                        <img src="/static/img/logos/tim.png" alt="TIM" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/vivo.png" alt="Vivo" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/rock.png" alt="Rock in Rio" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/totvs.png" alt="TOTVS" loading="lazy" decoding="async">
+                        <img src="/static/img/logos/som-livre.png" alt="Som Livre" loading="lazy" decoding="async">
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- RODAPÉ -->
+        <footer class="k-footer">
+            <div class="k-container k-footer__inner">
+                <div>© Karaokê RJ • Karauke RJ</div>
+
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                       href="https://www.instagram.com/karaokerj/?hl=pt-br" target="_blank" rel="noopener">
+                        <i class="bi bi-instagram"></i>
+                        <span class="footer-label">Instagram</span>
+                    </a>
+
+                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                       href="https://www.facebook.com/p/karaokerj-100079569512291/" target="_blank" rel="noopener">
+                        <i class="bi bi-facebook"></i>
+                        <span class="footer-label">Facebook</span>
+                    </a>
+
+                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2"
+                       href="https://www.youtube.com/@karaokerj4569/shorts" target="_blank" rel="noopener">
+                        <i class="bi bi-youtube"></i>
+                        <span class="footer-label">YouTube</span>
+                    </a>
+
+                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2" href="/catalogo">
+                        <i class="bi bi-music-note-list"></i>
+                        <span class="footer-label">Catálogo</span>
+                    </a>
+
+                    <a class="k-btn k-btn--primary d-inline-flex align-items-center gap-2" href="#servicos">
+                        <i class="bi bi-arrow-up"></i>
+                        <span class="footer-label">Topo</span>
+                    </a>
+                </div>
+            </div>
+        </footer>
+
+    </main>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
+
+    <!-- ✅ CARROSSEL (Aluguel + Vendas) -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('[data-carousel]').forEach((carousel) => {
+                const track = carousel.querySelector('.aluguel-track');
+                const left = carousel.querySelector('.aluguel-arrow.is-left');
+                const right = carousel.querySelector('.aluguel-arrow.is-right');
+                if (!track) return;
+
+                function cardStep() {
+                    const card = track.querySelector('.aluguel-card');
+                    if (!card) return 320;
+                    const gap = 14;
+                    return Math.round(card.getBoundingClientRect().width + gap);
+                }
+
+                function go(dir) {
+                    const step = cardStep() * dir;
+                    track.scrollTo({left: track.scrollLeft + step, behavior: 'smooth'});
+                }
+
+                // ✅ Setas
+                left?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    stopAuto();
+                    go(-1);
+                });
+
+                right?.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    stopAuto();
+                    go(1);
+                });
+
+                // ✅ DRAG
+                let isDown = false, startX = 0, startLeft = 0;
+
+                track.addEventListener('pointerdown', (e) => {
+                    // não iniciar drag se clicou nas setas
+                    if (e.target.closest && e.target.closest('.aluguel-arrow')) return;
+
+                    // não iniciar drag se clicou na imagem (para o viewer abrir)
+                    if (e.target.closest && e.target.closest('.aluguel-media')) return;
+
+                    stopAuto();
+
+                    isDown = true;
+                    startX = e.clientX;
+                    startLeft = track.scrollLeft;
+
+                    // só captura no mouse (evita “bola” no touch)
+                    if (e.pointerType === 'mouse') {
+                        try {
+                            track.setPointerCapture(e.pointerId);
+                        } catch {
+                        }
+                    }
+
+                    track.style.scrollBehavior = 'auto';
+                });
+
+                track.addEventListener('pointermove', (e) => {
+                    if (!isDown) return;
+                    const dx = e.clientX - startX;
+                    track.scrollLeft = startLeft - dx;
+                });
+
+                function endDrag() {
+                    if (!isDown) return;
+                    isDown = false;
+                    track.style.scrollBehavior = 'smooth';
+                }
+
+                track.addEventListener('pointerup', endDrag);
+                track.addEventListener('pointercancel', endDrag);
+                track.addEventListener('pointerleave', endDrag);
+
+                // ✅ AUTOPLAY (um por carrossel)
+                let timer = null;
+                const AUTOPLAY_MS = 4000;
+
+                function startAuto() {
+                    stopAuto();
+                    timer = setInterval(() => {
+                        const step = cardStep();
+                        const max = track.scrollWidth - track.clientWidth;
+
+                        if (track.scrollLeft >= max - 2) {
+                            track.scrollTo({left: 0, behavior: 'smooth'});
+                        } else {
+                            track.scrollTo({left: track.scrollLeft + step, behavior: 'smooth'});
+                        }
+                    }, AUTOPLAY_MS);
+                }
+
+                function stopAuto() {
+                    if (timer) clearInterval(timer);
+                    timer = null;
+                }
+
+                // expõe para os handlers acima
+                window.stopAuto = window.stopAuto || (() => {
+                });
+                // mas aqui usamos as funções locais
+                startAuto();
+
+                // se usuário começar a interagir, para autoplay
+                track.addEventListener('wheel', stopAuto, {passive: true});
+                track.addEventListener('touchstart', stopAuto, {passive: true});
+            });
+        });
+    </script>
+
+
+
+{% endblock %}

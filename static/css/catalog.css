@@ -1,0 +1,557 @@
+/* catalog.css — Catálogo (clean / rápido / mobile-first)
+   Mantém IDs esperados pelo catalog.js.
+*/
+
+html{ scroll-behavior:smooth; }
+body{ background: var(--bg); color: var(--text); }
+
+/* Topo do catálogo */
+.cat-hero{ padding: 18px 0 10px; }
+.cat-hero h1{
+  margin:0;
+  font-size: clamp(22px, 3vw, 34px);
+  letter-spacing: -.4px;
+}
+.cat-hero p{
+  margin:8px 0 0;
+  color: var(--muted);
+  font-size: var(--p);
+}
+
+/* Layout principal */
+.cat-layout{
+  display:grid;
+  grid-template-columns: 320px 1fr;
+  gap: 18px;
+  padding-bottom: 24px;
+}
+
+/* Sidebar */
+.sidebar{
+  position: sticky;
+  top: 74px; /* altura aproximada do header */
+  align-self:start;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+  overflow:hidden;
+}
+.sidebar__head{
+  padding: 14px;
+  border-bottom: 1px solid var(--line);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap: 10px;
+}
+.sidebar__head b{ font-size: 14px; }
+.sidebar__body{ padding: 14px; display:grid; gap: 10px; }
+
+.field label{
+  display:block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.field input,.field select{
+  width:100%;
+  padding: 11px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  outline:none;
+  color: var(--text);
+}
+.field input:focus,.field select:focus{
+  border-color: color-mix(in srgb, var(--brand) 40%, var(--line));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.field input::placeholder{
+  color: var(--muted);
+  opacity: .85;
+}
+
+.sidebar__actions{
+  display:flex;
+  gap: 10px;
+  flex-wrap:wrap;
+  padding-top: 6px;
+}
+
+/* Actions layout: Buscar + Favoritos lado a lado (quando couber) */
+.sidebar__actions .k-btn{
+  flex: 1 1 160px;
+}
+#btnVoice{ flex-basis: 100%; }
+#navFav{ position: relative; }
+.small{ font-size: 12px; color: var(--muted); }
+
+/* Conteúdo (resultados) */
+.panel{
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+  overflow:hidden;
+}
+.panel__head{
+  padding: 14px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.panel__head b{ font-size: 14px; }
+.count{
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+.panel__body{ padding: 14px; }
+.status{
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+/* Lista de músicas (desktop/lista horizontal) */
+.results-wrap{
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--surface);
+
+  max-height: min(64vh, 620px);
+  display:flex;
+  flex-direction:column;
+}
+.results-head{
+  display:grid;
+  grid-template-columns: 88px 1.4fr 1fr 140px 56px; /* + espaço do plano */
+  gap: 10px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface) 84%, var(--surface-2));
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.results{
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.row{
+  display:grid;
+  grid-template-columns: 88px 1.4fr 1fr 140px 56px;
+  gap: 10px;
+  align-items:center;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+.row:nth-child(even){
+  background: color-mix(in srgb, var(--surface-2) 55%, var(--surface));
+}
+
+.cell-code{
+  font-weight: 900;
+  letter-spacing:.6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--brand-2);
+  white-space: nowrap;
+}
+.cell-title{
+  font-weight: 700;
+  color: var(--text);
+  min-width: 0;
+}
+.cell-singer{
+  color: var(--muted);
+  font-size: 13px;
+  min-width: 0;
+}
+.cell-pack{
+  font-size: 13px;
+  min-width: 0;
+}
+.cell-actions{
+  display:flex;
+  justify-content:flex-end;
+  align-items:center;
+}
+
+/* Badge do plano (desktop e mobile) — CORRIGIDO (sem cor fixa de dark) */
+.plan-badge{
+  display:inline-flex;
+  align-items:center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 900;
+  font-size: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--brand) 10%, var(--surface-2));
+  color: var(--text);
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(11,16,32,.08);
+}
+
+/* variações suaves */
+.plan-plus{ border-color: color-mix(in srgb, var(--brand) 35%, var(--line)); }
+.plan-basic{ border-color: color-mix(in srgb, var(--brand-2) 35%, var(--line)); }
+.plan-plus-only{ border-color: color-mix(in srgb, #ffd43b 40%, var(--line)); }
+.plan-mixed{ border-color: color-mix(in srgb, var(--brand) 25%, var(--line)); }
+.plan-default{ opacity: .95; }
+
+/* Favorito (desktop + mobile) */
+.fav-btn{
+  width: 44px;
+  height: 40px;
+  min-width: 44px;
+  display:grid;
+  place-items:center;
+
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: 14px;
+  cursor: pointer;
+
+  transition: background var(--ease), transform var(--ease), border-color var(--ease);
+}
+.fav-btn i{ font-size: 1.15rem; }
+.fav-btn:hover{
+  background: color-mix(in srgb, var(--brand) 10%, var(--surface-2));
+  transform: translateY(-1px);
+}
+.fav-btn.on{
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--line));
+  background: color-mix(in srgb, var(--brand) 18%, var(--surface-2));
+}
+
+/* =========================================================
+   HEADER: ações em ícones (não quebra no mobile)
+========================================================= */
+.k-actions.k-actions--icons{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 52vw;
+  padding-bottom: 2px;
+}
+.k-actions.k-actions--icons::-webkit-scrollbar{ height: 0; }
+
+.k-btn.k-btn--icon{
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display:grid;
+  place-items:center;
+  border-radius: 14px;
+  flex: 0 0 auto;
+}
+.k-btn.k-btn--icon i{ font-size: 1.2rem; }
+@media (max-width: 680px){
+  .k-actions.k-actions--icons .k-btn{ white-space: nowrap; }
+}
+
+/* =========================================================
+   Overlay / Drawer (mobile)
+========================================================= */
+#overlay{
+  position:fixed;
+  inset:0;
+  background: rgba(0,0,0,.55);
+  backdrop-filter: blur(4px);
+  opacity:0;
+  pointer-events:none;
+  transition: opacity var(--ease);
+  z-index: 80;
+}
+#overlay.show{ opacity:1; pointer-events:auto; }
+
+.sidebar.open{ transform: translateY(0); }
+@media (min-width: 981px){
+  .sidebar.collapsed{ width: 86px; }
+  .sidebar.collapsed .sidebar__body{ display:none; }
+}
+
+/* =========================================================
+   MOBILE: cards verticais
+========================================================= */
+@media (max-width: 980px){
+  .cat-layout{ grid-template-columns: 1fr; }
+
+  .sidebar{
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    top: auto;
+    max-height: 78vh;
+    transform: translateY(110%);
+    transition: transform var(--ease);
+    z-index: 90;
+  }
+
+  .results-wrap{ max-height: min(70vh, 640px); }
+  .results-head{ display:none; }
+
+  .results{
+    padding: 10px;
+    display:grid;
+    gap: 10px;
+  }
+
+  .row{
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow-1);
+
+    display:grid;
+    grid-template-columns: 1fr 48px; /* conteúdo + fav */
+    gap: 10px;
+    align-items:start;
+  }
+
+  /* conteúdo ocupa col 1 */
+  .cell-top,
+  .cell-singer,
+  .cell-title,
+  .cell-pack{
+    grid-column: 1 / 2;
+    min-width: 0;
+    display:flex;
+    align-items:baseline;
+    gap: 8px;
+  }
+
+  /* favorito lateral */
+  .cell-actions{
+    grid-column: 2 / 3;
+    grid-row: 1 / 5;
+    justify-content:flex-end;
+    align-items:flex-start;
+  }
+  .fav-btn{ width: 44px; height: 44px; border-radius: 14px; }
+
+  /* labels + valores */
+  .lbl{
+    flex: 0 0 auto;
+    font-size: .78rem;
+    font-weight: 800;
+    color: var(--muted);
+    letter-spacing: .02em;
+  }
+
+  .cell-code .val{
+    font-weight: 900;
+    font-size: 1.12rem;
+    letter-spacing: .6px;
+    font-variant-numeric: tabular-nums;
+    color: var(--brand-2);
+    white-space: nowrap;
+  }
+
+  .cell-singer .val,
+  .cell-title .val{
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 800;
+    color: var(--text);
+  }
+
+  /* plano em linha própria (badge) */
+  .cell-pack{
+    margin-top: 4px;
+    align-items:center;
+  }
+}
+
+/* =========================================================
+   FIX DEFINITIVO SELECT NO TEMA DARK (DESKTOP + MOBILE)
+========================================================= */
+html[data-theme="dark"] select{
+  color-scheme: dark !important;
+  background: #0b1020 !important;
+  color: #f7f7fb !important;
+  border-color: rgba(255,255,255,.22) !important;
+}
+html[data-theme="dark"] input{
+  background: #0b1020 !important;
+  color: #f7f7fb !important;
+  border-color: rgba(255,255,255,.22) !important;
+}
+html[data-theme="dark"] input::placeholder{
+  color: rgba(247,247,251,.60) !important;
+  opacity: 1 !important;
+}
+html[data-theme="dark"] select option{
+  background: #0b1020 !important;
+  color: #f7f7fb !important;
+}
+html[data-theme="dark"] .sidebar .field label{
+  color: rgba(247,247,251,.80) !important;
+}
+html[data-theme="dark"] select:focus,
+html[data-theme="dark"] input:focus{
+  border-color: var(--brand) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent) !important;
+}
+
+/* =========================================================
+   DESKTOP: botão de filtros do topo some (sidebar já está fixa)
+========================================================= */
+@media (min-width: 981px){
+  #btnHamburger{ display:none !important; }
+  .results-head{ display:grid !important; }
+  .lbl{ display:none !important; }
+  .val{ display:inline; color: inherit; font-weight: inherit; }
+  .cell-top{ display:none !important; }
+}
+
+/* =========================================================
+   Botão Favoritos no topo + Badge contador
+   - aparece SÓ no mobile
+========================================================= */
+#btnFavTop{ position: relative; display:none; }
+
+@media (max-width: 980px){
+  #btnFavTop{
+    display:inline-flex;
+    width:44px;
+    height:44px;
+    padding:0;
+    border-radius:14px;
+    justify-content:center;
+    align-items:center;
+  }
+}
+
+/* badge contador */
+.fav-badge{
+  position: absolute;
+  top: -6px;
+  right: -6px;
+
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+
+  display: none; /* aparece via JS */
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+
+  color: #fff;
+  background: #e11d48;
+  border: 2px solid var(--bg);
+}
+/* contador no botão Favoritos da sidebar (pill) */
+.fav-pill{
+  margin-left: 8px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 7px;
+
+  display: none; /* aparece via JS */
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1;
+
+  color: #fff;
+  background: #e11d48;
+  border: 2px solid var(--surface);
+}
+
+/* no dark o recorte fica bonito */
+html[data-theme="dark"] .fav-pill{
+  border-color: var(--bg);
+}
+
+/* ============================
+   FIX: badge de favoritos cortando no topo (mobile)
+   Cole no FINAL do catalog.css
+============================ */
+
+/* permite o badge "sair" um pouco pra cima sem ser cortado */
+.k-actions.k-actions--icons{
+  overflow-y: visible;  /* importante */
+  padding-top: 6px;     /* cria respiro pro badge */
+}
+
+/* garante que o botão não corte o badge */
+#btnFavTop{
+  overflow: visible;
+}
+
+/* badge mais "alto" e com line-height correto (não corta número) */
+.fav-badge{
+  top: -8px;
+  right: -8px;
+
+  min-width: 20px;
+  height: 20px;
+
+  padding: 0 6px;
+  font-size: 12px;
+  line-height: 20px;     /* chave: evita corte */
+  z-index: 5;
+}
+/* FIX DEFINITIVO: badge não pode usar top/right negativos (corta em header scroll/overflow) */
+#btnFavTop{
+  position: relative;
+  overflow: visible; /* ok manter */
+}
+
+/* badge dentro do botão (sem cortar) */
+#btnFavTop .fav-badge{
+  top: 4px;          /* <= dentro */
+  right: 4px;        /* <= dentro */
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+
+  display: none;     /* JS liga */
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 20px; /* evita cortar o número */
+
+  color: #fff;
+  background: #e11d48;
+  border: 2px solid var(--bg);
+
+  z-index: 10;
+  pointer-events: none; /* não atrapalha o clique */
+}

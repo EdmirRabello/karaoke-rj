@@ -1,0 +1,765 @@
+/* home.css — Home clean + hero com vídeo (estilo “Disney-like”) */
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+/* =========================
+   HERO
+========================= */
+.hero {
+    position: relative;
+    padding: clamp(18px, 4vw, 44px) 0;
+}
+
+/* Hero “boxed”: fundo/vídeo respeita a mesma largura das seções */
+.hero__frame {
+    position: relative;
+    overflow: hidden;
+    border-radius: 26px;
+    border: 1px solid rgba(255, 255, 255, .10);
+    box-shadow: var(--shadow-2);
+    min-height: clamp(520px, 72vh, 760px);
+    display: grid;
+    align-items: center;
+    padding: clamp(26px, 5vw, 56px);
+}
+
+.hero__bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.hero__video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: saturate(1.05) contrast(1.05);
+}
+
+.hero__overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(1200px 600px at 20% 15%, rgba(30, 106, 156, .42), transparent 60%),
+    radial-gradient(900px 520px at 80% 0%, rgba(215, 180, 106, .24), transparent 62%),
+    linear-gradient(180deg, rgba(5, 6, 10, .15), rgba(5, 6, 10, .88));
+}
+
+.hero__content {
+    position: relative;
+    z-index: 2;
+    display: grid;
+    gap: 14px;
+    max-width: 720px;
+}
+
+.hero__kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .08);
+    border: 1px solid rgba(255, 255, 255, .16);
+    width: fit-content;
+    color: rgba(238, 242, 255, .92);
+    backdrop-filter: blur(10px);
+}
+
+.hero__kicker i {
+    font-size: 1.1rem;
+}
+
+.hero__title {
+    font-size: var(--h1);
+    line-height: 1.05;
+    margin: 0;
+    letter-spacing: -.7px;
+    color: #fff;
+}
+
+.hero__title .em {
+    color: color-mix(in srgb, var(--accent) 85%, white 15%);
+}
+
+.hero__lead {
+    margin: 0;
+    color: rgba(238, 242, 255, .78);
+    font-size: clamp(14px, 2vw, 17px);
+    max-width: 60ch;
+}
+
+.hero__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+/* =========================
+   Badges (mini cards)
+========================= */
+.badges {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.badge {
+    background: rgba(255, 255, 255, .06);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 18px;
+    padding: 14px;
+    backdrop-filter: blur(10px);
+}
+
+.badge b {
+    display: block;
+    color: #fff;
+    font-size: 14px;
+}
+
+.badge span {
+    display: block;
+    color: rgba(238, 242, 255, .72);
+    font-size: 13px;
+    margin-top: 4px;
+}
+
+/* Conteúdo abaixo do hero */
+.main-light {
+    background: var(--bg);
+    color: var(--text);
+}
+
+/* =========================
+   Banner (se usar)
+========================= */
+.banner {
+    border-radius: 26px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, var(--surface-2), var(--surface));
+    box-shadow: var(--shadow-1);
+}
+
+.banner__inner {
+    display: grid;
+    grid-template-columns: 1.2fr .8fr;
+    gap: 16px;
+    align-items: center;
+    padding: clamp(16px, 4vw, 26px);
+}
+
+.banner__title {
+    margin: 0;
+    font-size: clamp(18px, 2.6vw, 26px);
+    letter-spacing: -.3px;
+}
+
+.banner__text {
+    margin: 6px 0 0;
+    color: var(--muted);
+    font-size: var(--p);
+}
+
+.banner__img {
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-1);
+}
+
+/* =========================
+   Header legível em cima do vídeo
+========================= */
+.k-header {
+    background: rgba(4, 7, 20, .55) !important;
+    border-bottom-color: rgba(255, 255, 255, .12) !important;
+    backdrop-filter: blur(14px);
+}
+
+.k-brand__name b,
+.k-brand__name span {
+    color: rgba(255, 255, 255, .92) !important;
+}
+
+.k-brand__name span {
+    opacity: .78;
+}
+
+.k-nav a {
+    color: rgba(255, 255, 255, .78) !important;
+}
+
+.k-nav a:hover {
+    color: #fff !important;
+    background: rgba(255, 255, 255, .10) !important;
+}
+
+/* botões do header no padrão vermelho */
+.k-actions .k-btn {
+    background: linear-gradient(180deg,
+    color-mix(in srgb, var(--brand) 92%, white 8%),
+    var(--brand-2)
+    ) !important;
+    color: #fff !important;
+    border: 1px solid color-mix(in srgb, var(--brand) 30%, var(--line)) !important;
+}
+
+.k-actions .k-btn:hover {
+    filter: brightness(1.06);
+}
+
+.theme-toggle {
+    border-color: rgba(255, 255, 255, .22) !important;
+    box-shadow: 0 0 0 4px rgba(255, 255, 255, .08) !important;
+}
+
+/* =========================
+   Acessibilidade: reduz movimento
+========================= */
+@media (prefers-reduced-motion: reduce) {
+    .hero__video {
+        display: none;
+    }
+
+    .hero__bg {
+        background: url("../media/hero_poster.jpg") center/cover no-repeat;
+    }
+}
+
+/* =========================
+   Responsivo geral (900px)
+========================= */
+@media (max-width: 900px) {
+    .hero__frame {
+        min-height: clamp(360px, 50vh, 560px);
+        padding: clamp(22px, 5vw, 42px);
+    }
+
+    .badges {
+        grid-template-columns: 1fr;
+    }
+
+    .banner__inner {
+        grid-template-columns: 1fr;
+    }
+
+    .hero__overlay {
+        background: radial-gradient(1200px 600px at 20% 15%, rgba(30, 106, 156, .32), transparent 60%),
+        radial-gradient(900px 520px at 80% 0%, rgba(215, 180, 106, .18), transparent 62%),
+        linear-gradient(180deg, rgba(5, 6, 10, .25), rgba(5, 6, 10, .92));
+    }
+}
+
+/* =========================
+   HEADER — MOBILE só ícones
+========================= */
+@media (max-width: 680px) {
+
+    .k-header__inner {
+        gap: 10px;
+    }
+
+    .k-nav {
+        display: none !important;
+    }
+
+    .k-brand__name span {
+        display: none !important;
+    }
+
+    .k-brand__name b {
+        font-size: 14px;
+        line-height: 1.1;
+    }
+
+    .k-brand img {
+        width: 34px;
+        height: 34px;
+    }
+
+    .k-actions {
+        margin-left: auto !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+        flex-wrap: nowrap !important;
+    }
+
+    .k-actions .k-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        padding: 0 !important;
+        border-radius: 14px !important;
+
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        gap: 0 !important;
+        font-size: 0 !important;
+        white-space: nowrap !important;
+    }
+
+    .k-actions .k-btn i {
+        font-size: 1.2rem !important;
+        line-height: 1 !important;
+        margin: 0 !important;
+        display: block !important;
+    }
+
+    .k-btn--whats {
+        width: 44px !important;
+        min-width: 44px !important;
+    }
+}
+
+/* =========================
+   ALUGUEL — CARROSSEL (1 linha, máx 4 cards)
+========================= */
+
+/* (não corta a rolagem; quem corta é o viewport) */
+.section.aluguel {
+    overflow: visible;
+}
+
+.section.aluguel .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+.aluguel .section-head {
+    max-width: 860px;
+    margin-bottom: 18px;
+}
+
+/* Carrossel (Aluguel + Vendas) — setas flutuantes */
+.aluguel-carousel {
+    position: relative;
+    display: block;
+}
+
+/* viewport corta */
+.aluguel-viewport {
+    overflow: hidden;
+    width: 100%;
+}
+
+/* track rola */
+.aluguel-track {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 14px;
+
+    overflow-x: auto;
+    overflow-y: hidden;
+
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    /* respiro p/ setas sobrepostas */
+    padding: 2px 52px;
+}
+
+.aluguel-track::-webkit-scrollbar {
+    display: none;
+}
+
+/* card 4 por vez */
+.aluguel-card {
+    flex: 0 0 calc((100% - 14px * 3) / 4);
+    max-width: calc((100% - 14px * 3) / 4);
+
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 18px;
+    overflow: hidden;
+    padding: 12px;
+
+    display: flex;
+    flex-direction: column;
+}
+
+/* =========================
+   ✅ LUPA (overlay) + cursor
+   (não altera seu JS: só deixa visível e clicável)
+========================= */
+.aluguel-media {
+    position: relative; /* necessário pro overlay */
+    border-radius: 14px;
+    overflow: hidden;
+    height: 190px;
+    background: rgba(0, 0, 0, .25);
+    margin-bottom: 10px;
+    cursor: zoom-in; /* dica de UX */
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* evita que o drag da imagem “roube” o clique */
+.aluguel-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    pointer-events: none; /* clique vai no .aluguel-media */
+}
+
+/* overlay da lupa */
+/* =========================
+   LUPA (overlay) — só aparece no hover (PC)
+========================= */
+
+.aluguel-media {
+    position: relative;
+}
+
+/* fundo (a “bola”) */
+
+
+/* ícone da lupa */
+.aluguel-media::before {
+    content: ""; /* bootstrap-icons (se o seu já funciona no hover, mantém) */
+    font-family: "bootstrap-icons";
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    color: rgba(255, 255, 255, .92);
+    font-size: 18px;
+
+    /* ✅ some por padrão */
+    opacity: 0;
+    transform: scale(.96);
+    transition: opacity .18s ease, transform .18s ease;
+    pointer-events: none;
+}
+
+/* ✅ aparece só no hover/focus (PC) */
+@media (hover: hover) {
+    .aluguel-media:hover::before,
+    .aluguel-media:hover::after,
+    .aluguel-media:focus-within::before,
+    .aluguel-media:focus-within::after {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* ✅ mobile: como não tem hover, deixa visível sempre (opcional)
+   Se você NÃO quiser a lupa no mobile, apague este bloco. */
+@media (hover: none) {
+    .aluguel-media::before,
+    .aluguel-media::after {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+
+/* hover */
+@media (hover: hover) {
+    .aluguel-media:hover::after {
+        background: rgba(0, 0, 0, .68);
+        border-color: rgba(255, 255, 255, .28);
+    }
+}
+
+/* ========================= */
+
+.aluguel-name {
+    font-size: 1.02rem;
+    margin: 6px 0 4px;
+}
+
+.aluguel-desc {
+    color: rgba(238, 242, 255, .75);
+    margin: 0 0 10px;
+    font-size: .93rem;
+    line-height: 1.25;
+}
+
+/* setas flutuantes */
+.aluguel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, .14);
+    background: rgba(0, 0, 0, .35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    opacity: .78;
+    z-index: 5;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+    transition: opacity .2s ease, transform .2s ease, background-color .2s ease;
+}
+
+.aluguel-arrow.is-left {
+    left: -14px;
+}
+
+.aluguel-arrow.is-right {
+    right: -14px;
+}
+
+.aluguel-arrow:hover {
+    opacity: .95;
+    background: rgba(0, 0, 0, .50);
+}
+
+.aluguel-arrow i {
+    font-size: 1.25rem;
+}
+
+/* responsivo */
+@media (max-width: 1100px) {
+    .aluguel-track {
+        padding-left: 46px;
+        padding-right: 46px;
+    }
+
+    .aluguel-card {
+        flex-basis: calc((100% - 14px * 2) / 3);
+        max-width: calc((100% - 14px * 2) / 3);
+    }
+}
+
+@media (max-width: 800px) {
+    .aluguel-card {
+        flex-basis: calc((100% - 14px) / 2);
+        max-width: calc((100% - 14px) / 2);
+    }
+}
+
+@media (max-width: 560px) {
+    .section.aluguel .container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .aluguel-track {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .aluguel-arrow.is-left {
+        left: 6px;
+    }
+
+    .aluguel-arrow.is-right {
+        right: 6px;
+    }
+
+    .aluguel-card {
+        flex-basis: 92%;
+        max-width: 92%;
+    }
+
+    .aluguel-media {
+        height: 170px;
+    }
+}
+
+/* Alinhamento do botão nos cards de aluguel */
+.aluguel-card ul {
+    flex: 1;
+    margin-bottom: 12px;
+}
+
+.aluguel-cta {
+    display: flex !important;
+    justify-content: center !important;
+    margin-top: auto !important;
+}
+
+.aluguel-cta .k-btn {
+    min-width: 200px;
+    text-align: center;
+}
+
+/* Esconde os textos do rodapé no mobile */
+@media (max-width: 575.98px) {
+    .footer-label {
+        display: none !important;
+    }
+}
+
+/* =====================================================
+   SEÇÃO CLIENTES — MARQUEE DE LOGOS
+===================================================== */
+
+.clientes {
+    padding: 60px 0;
+    text-align: center;
+    width: 100%;
+    position: relative;
+}
+
+.clientes-title {
+    font-size: 1.6rem;
+    margin-bottom: 24px;
+}
+
+.clientes-marquee {
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    clip-path: inset(0);
+    contain: paint;
+    isolation: isolate;
+    transform: translateZ(0);
+    mask-image: linear-gradient(
+            to right,
+            transparent,
+            #000 10%,
+            #000 90%,
+            transparent
+    );
+}
+
+.clientes-track {
+    display: flex;
+    gap: 60px;
+    align-items: center;
+    width: max-content;
+    animation: clientesScroll 28s linear infinite;
+    will-change: transform;
+    transform: translateZ(0);
+}
+
+.clientes-track img {
+    height: 38px;
+    object-fit: contain;
+    flex: 0 0 auto;
+    filter: brightness(0) invert(1) opacity(.85);
+    transition: .3s ease;
+    will-change: transform;
+}
+
+.clientes-track img:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+@keyframes clientesScroll {
+    from {
+        transform: translate3d(0, 0, 0);
+    }
+    to {
+        transform: translate3d(-50%, 0, 0);
+    }
+}
+
+/* mobile */
+@media (max-width: 768px) {
+    .clientes-track {
+        gap: 32px;
+        animation-duration: 22s;
+    }
+
+    .clientes-track img {
+        height: 28px;
+    }
+}
+
+/* alinhar largura com layout */
+.clientes .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-left: 16px;
+    padding-right: 16px;
+}
+
+@media (max-width: 560px) {
+    .clientes .container {
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+}
+
+/* Ajustes de largura (desktop) */
+@media (min-width: 992px) {
+    .section.aluguel .container,
+    .clientes .container {
+        max-width: none;
+        width: min(var(--container), calc(100% - (var(--gutter) * 2)));
+        margin-inline: auto;
+        padding-inline: 0;
+    }
+
+    .aluguel .section-head {
+        max-width: none;
+    }
+}
+
+/* Telas bem largas: 5 cards */
+@media (min-width: 1400px) {
+    .aluguel-card {
+        flex: 0 0 calc((100% - 14px * 4) / 5);
+        max-width: calc((100% - 14px * 4) / 5);
+    }
+
+    .aluguel-media {
+        height: 210px;
+    }
+}
+
+/* ✅ Clique na imagem SEM virar gesto/drag */
+.aluguel-media {
+    cursor: zoom-in;
+    touch-action: manipulation; /* no mobile: prioriza clique */
+}
+
+/* Permite clique nas setas e no card, mas evita drag da imagem */
+/* Permite clique nas setas e no card, mas evita drag da imagem */
+.aluguel-media > img {
+    -webkit-user-drag: none;
+    user-drag: none;
+}
+
+/* só desativa eventos na imagem quando o clique vier direto nela */
+.aluguel-media > img:active {
+    pointer-events: none;
+}
+
+/* ✅ Remove indicador de arraste (a “bola”) e garante clique */
+.aluguel-track {
+    touch-action: pan-x; /* só permite arrastar na horizontal */
+}
+
+.aluguel-media {
+    touch-action: manipulation; /* toque vira clique, não drag */
+    cursor: zoom-in;
+}
+
+/* imagem não captura gesto */
+.aluguel-media img {
+    pointer-events: none;
+    -webkit-user-drag: none;
+    user-drag: none;
+}
