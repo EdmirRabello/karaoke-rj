@@ -748,8 +748,9 @@ body {
 }
 
 /* ✅ Remove indicador de arraste (a “bola”) e garante clique */
-.aluguel-track {
-    touch-action: pan-x; /* só permite arrastar na horizontal */
+.aluguel-track{
+  touch-action: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .aluguel-media {

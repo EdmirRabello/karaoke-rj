@@ -1,4 +1,12 @@
-// Tema agora é global (static/js/theme.js) e funciona em todas as páginas.
+/* catalog.js — Catálogo de Músicas (Karaokê RJ)
+   ==========================================================
+   - Busca: /api/search
+   - Favoritos: localStorage + sync best-effort (/api/fav/register, /api/fav/remove)
+   - Listagens:
+     * Meus Favoritos: /api/fav/user?user_id=...&limit=...
+     * Top Favoritos (Usuário): /api/top-favoritos/user?user_id=...&limit=30
+     * (Opcional) Top Favoritos (Geral): /api/top-favoritos?limit=30
+*/
 
 const el = (id) => document.getElementById(id);
 
@@ -6,267 +14,252 @@ const qInput = el("q");
 const filterTipo = el("filterTipo");
 const filterPlano = el("filterPlano");
 const btnSearch = el("btnSearch");
-const btnVoice = el("btnVoice");
+
 const statusDiv = el("status");
 const resultsDiv = el("results");
 const panelTitle = el("panelTitle");
 const countCard = el("countCard");
-const btnFavTop = el("btnFavTop");
-// Contador de favoritos aparece em mais de um lugar (header e sidebar)
-const favCountEls = Array.from(document.querySelectorAll(".favCount"));
 
-// Alguns layouts não têm botão dedicado "navSearch" (usam o btnSearch)
-const navSearch = el("navSearch") || btnSearch;
-const navFav = el("navFav");
+const btnFavUser = el("btnFavUser"); // topo: Meus Favoritos
+const btnTopFav = el("btnTopFav");   // topo: Top Favoritos (Usuário)
 
-const sidebar = el("sidebar");
-const overlay = el("overlay");
-const btnHamburger = el("btnHamburger");
-const btnCollapse = el("btnCollapse");
+const btnFiltersToggle = el("btnFiltersToggle");
+const filtersChevron = el("filtersChevron");
+const sidebarEl = el("sidebar");
 
 let view = "search";
 const FAV_KEY = "cantus_favs_codes_v1";
+const USER_ID = 1; // enquanto não existe login
 
-// ✅ guarda último resultado para re-render ao trocar breakpoint
 let lastItems = [];
 let lastCount = 0;
 
-// breakpoints
 const mqDesktop = window.matchMedia("(min-width: 981px)");
 
-function isDesktop(){
-  return mqDesktop.matches;
+function isDesktop() {
+    return mqDesktop.matches;
 }
 
-function esc(s){
-  return String(s ?? "")
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+function esc(s) {
+    return String(s ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
 }
 
-function formatCode(code){
-  const s = String(code ?? "");
-  if (!/^\d+$/.test(s)) return s;
-  return s.length >= 5 ? s : s.padStart(5, "0");
+function formatCode(code) {
+    const s = String(code ?? "");
+    if (!/^\d+$/.test(s)) return s;
+    return s.length >= 5 ? s : s.padStart(5, "0");
 }
 
-function setCount(n){
-  if (!countCard) return;
-  const num = Number(n || 0);
-  lastCount = num;
-  countCard.innerHTML = `🎵 <b>${num}</b> músicas encontradas`;
-  countCard.classList.add("bump");
-  setTimeout(()=>countCard.classList.remove("bump"), 180);
+function setCount(n) {
+    if (!countCard) return;
+    const num = Number(n || 0);
+    lastCount = num;
+    countCard.innerHTML = `🎵 <b>${num}</b> músicas encontradas`;
 }
 
-function setStatus(kind, message, opts){
-  if (!statusDiv) return;
-  const msg = String(message || "");
-  const k = String(kind || "info");
-  const action = opts && opts.action ? opts.action : null;
-  const actionLabel = opts && opts.actionLabel ? String(opts.actionLabel) : "Tentar novamente";
+function setStatus(kind, message) {
+    if (!statusDiv) return;
+    const msg = String(message || "").trim();
 
-  statusDiv.className = "status " + (k ? ("status-" + k) : "");
-  statusDiv.setAttribute("role", k === "error" ? "alert" : "status");
-  statusDiv.innerHTML = `
-    <div class="status-inner">
-      <span class="status-text">${esc(msg)}</span>
-      ${action ? `<button type="button" class="k-btn k-btn-ghost k-btn--compact status-action" data-status-action="1">${esc(actionLabel)}</button>` : ``}
-    </div>
-  `;
-
-  if (action){
-    const btn = statusDiv.querySelector('[data-status-action="1"]');
-    if (btn) btn.onclick = action;
-  }
-}
-
-function getFavs(){
-  try { return JSON.parse(localStorage.getItem(FAV_KEY) || "[]"); }
-  catch { return []; }
-}
-
-function setFavs(arr){
-  localStorage.setItem(FAV_KEY, JSON.stringify(arr));
-}
-
-function updateFavCount(){
-  const n = getFavs().length;
-  const text = n > 99 ? "99+" : String(n);
-
-  // Atualiza todos os contadores existentes na página
-  if (!favCountEls.length) return;
-
-  for (const elx of favCountEls){
-    if (!elx) continue;
-    if (n > 0){
-      elx.textContent = text;
-      elx.style.display = "inline-flex";
-      elx.classList.toggle("is-max", n > 99);
-    } else {
-      elx.textContent = "";
-      elx.style.display = "none";
-      elx.classList.remove("is-max");
+    if (!msg) {
+        statusDiv.style.display = "none";
+        statusDiv.textContent = "";
+        statusDiv.className = "status";
+        return;
     }
-  }
+
+    statusDiv.style.display = "block";
+    statusDiv.className = "status status-" + (kind || "info");
+    statusDiv.textContent = msg;
 }
 
+// ===== NORMALIZAÇÃO DO PLANO (PLUS x BÁSICO) =====
+function normalizePlan(value) {
+    const v = String(value || "")
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
 
-
-function isFav(code){
-  return getFavs().includes(String(code));
+    if (v.includes("PLUS")) return "PLUS";
+    if (v.includes("BASICO")) return "BÁSICO";
+    return "";
 }
 
-function toggleFav(code){
-  const c = String(code);
-  let favs = getFavs();
-  if (favs.includes(c)) favs = favs.filter(x => x !== c);
-  else favs.push(c);
-  setFavs(favs);
-  return favs.includes(c);
+// ===== FAVORITOS (localStorage) =====
+function getFavs() {
+    try {
+        const cur = JSON.parse(localStorage.getItem(FAV_KEY) || "[]");
+        return Array.isArray(cur) ? cur.map(String) : [];
+    } catch {
+        return [];
+    }
 }
 
-function getTipoSelecionado(){
-  const t = (filterTipo?.value || "").trim();
-  return t ? t : null;
+function setFavs(arr) {
+    const safe = Array.isArray(arr) ? arr.map(String) : [];
+    localStorage.setItem(FAV_KEY, JSON.stringify(safe));
 }
 
-function getPlanoSelecionado(){
-  const p = (filterPlano?.value || "").trim();
-  return p ? p : null;
+function isFav(code) {
+    return getFavs().includes(String(code));
 }
 
-function setNavActive(activeBtn){
-  [navSearch, navFav].forEach(b => b?.classList.remove("active"));
-  activeBtn?.classList.add("active");
+function updateFavCount() {
+    const badge = document.querySelector(".fav-badge");
+    if (!badge) return;
+
+    const favs = getFavs();
+    const count = favs.length;
+
+    badge.textContent = count > 99 ? "99+" : String(count);
+    badge.style.display = count ? "flex" : "none";
+    badge.classList.toggle("is-big", count > 99);
+
+    if (count) {
+        badge.classList.remove("bump");
+        void badge.offsetWidth;
+        badge.classList.add("bump");
+    }
 }
 
-function openSidebar(){
-  if (!sidebar || !overlay) return;
-  sidebar.classList.add("open");
-  overlay.hidden = false;
-  overlay.classList.add("show");
+// Migração: "krj_favs" -> FAV_KEY
+(function migrateOldFavs() {
+    try {
+        const old = JSON.parse(localStorage.getItem("krj_favs") || "[]");
+        const cur = JSON.parse(localStorage.getItem(FAV_KEY) || "[]");
+        if (Array.isArray(old) && old.length && (!Array.isArray(cur) || !cur.length)) {
+            localStorage.setItem(FAV_KEY, JSON.stringify(old.map(String)));
+        }
+        localStorage.removeItem("krj_favs");
+    } catch {
+    }
+})();
+
+// ===== Sync server (best-effort) =====
+async function syncFavToServer(code, nowFav) {
+    try {
+        const url = nowFav ? "/api/fav/register" : "/api/fav/remove";
+        await fetch(url, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({user_id: USER_ID, code: Number(code)}),
+        });
+    } catch (e) {
+        console.warn("Falha ao sincronizar favorito", e);
+    }
 }
 
-function closeSidebar(){
-  if (!sidebar || !overlay) return;
-  sidebar.classList.remove("open");
-  overlay.classList.remove("show");
-  setTimeout(()=>{ overlay.hidden = true; }, 160);
+function toggleFav(code) {
+    const c = String(code);
+    let favs = getFavs();
+
+    if (favs.includes(c)) favs = favs.filter((x) => x !== c);
+    else favs.push(c);
+
+    setFavs(favs);
+
+    const nowFav = favs.includes(c);
+    syncFavToServer(c, nowFav);
+
+    // ✅ garante contador atualizado sempre
+    updateFavCount();
+
+    return nowFav;
 }
 
-function toggleCollapse(){
-  // No desktop: recolhe sidebar
-  // No mobile: fecha drawer
-  if (!sidebar || !btnCollapse) return;
-
-  const mobile = window.matchMedia("(max-width: 980px)").matches;
-  if (mobile) { closeSidebar(); return; }
-
-  const collapsed = sidebar.classList.toggle("collapsed");
-  btnCollapse.innerHTML = collapsed ? '<i class="bi bi-chevron-double-right"></i>' : '<i class="bi bi-chevron-double-left"></i>';
-  btnCollapse.title = collapsed ? "Expandir filtros" : "Recolher filtros";
+// ===== Filtros =====
+function getTipoSelecionado() {
+    const t = (filterTipo?.value || "").trim();
+    return t ? t : null;
 }
 
-overlay?.addEventListener("click", closeSidebar);
-btnHamburger?.addEventListener("click", () => {
-  // ✅ evita erro no desktop: sidebar já está fixa
-  if (isDesktop()) return;
-  openSidebar();
-});
-btnCollapse?.addEventListener("click", toggleCollapse);
-
-function closeSidebarIfMobile(){
-  if (window.matchMedia("(max-width: 900px)").matches) closeSidebar();
+function getPlanoSelecionado() {
+    const p = (filterPlano?.value || "").trim().toLowerCase();
+    if (!p) return null;
+    if (p === "basico" || p === "básico") return "basico";
+    return null;
 }
 
-function clearRows(){
-  if (!resultsDiv) return;
-  resultsDiv.innerHTML = "";
+// ===== Mobile: recolhe filtros =====
+function collapseFiltersMobile() {
+    const isMobile = window.matchMedia("(max-width: 980px)").matches;
+    if (!isMobile || !sidebarEl) return;
+
+    sidebarEl.classList.add("filters-collapsed");
+    btnFiltersToggle?.setAttribute("aria-expanded", "false");
+
+    if (filtersChevron) {
+        filtersChevron.classList.remove("bi-chevron-up", "bi-chevron-down");
+        filtersChevron.classList.add("bi-chevron-down");
+    }
 }
 
-function normalizePlan(v){
-  const s = String(v ?? "").trim();
-  if (!s) return "";
-  const up = s.toUpperCase();
+// ===== Render =====
+function renderRows(items) {
+    if (!resultsDiv) return;
 
-  const hasPlus = up.includes("PLUS");
-  const hasBasic = up.includes("BASICO") || up.includes("BÁSICO") || up.includes("BASIC");
+    const list = items || [];
+    lastItems = list;
 
-  if (hasPlus && hasBasic) return "PLUS + BÁSICO";
-  if (hasPlus && !hasBasic) return "SÓ PLUS";
-  if (!hasPlus && hasBasic) return "SÓ BÁSICO";
-  return s;
-}
+    const desktop = isDesktop();
+    let html = "";
 
-function planBadgeClass(planText){
-  const up = String(planText).toUpperCase();
-  if (up.includes("SÓ PLUS") || up.includes("SO PLUS")) return "plan-plus-only";
-  if (up.includes("PLUS") && (up.includes("BÁSICO") || up.includes("BASICO"))) return "plan-mixed";
-  if (up.includes("PLUS")) return "plan-plus";
-  if (up.includes("BÁSICO") || up.includes("BASICO")) return "plan-basic";
-  return "plan-default";
-}
+    for (const it of list) {
+        const codeStr = formatCode(it.code);
+        const favOn = isFav(it.code);
 
-/* ============================
-   RENDER: 2 layouts
-   - Desktop: tabela horizontal (sem labels)
-   - Mobile: cards (com labels)
-============================ */
-function renderRows(items){
-  if (!resultsDiv) return;
-  const list = items || [];
-  lastItems = list;
+        const singer = (it.singer || "").trim();
+        const title = (it.title || "").trim();
 
-  const desktop = isDesktop();
-  let html = "";
+        const planText = normalizePlan(it.package || it.availability);
+        const planCls = planText ? "plan-badge" : "";
 
-  for (const it of list){
-    const codeStr = formatCode(it.code);
-    const favOn = isFav(it.code);
+        const rankHtml =
+            view === "top"
+                ? `<div class="top-rank">
+             <span class="pos">#${esc(it.rank ?? "")}</span>
+             <span class="likes">❤️ ${esc(it.total ?? "")}</span>
+           </div>`
+                : "";
 
-    const singer = (it.singer || "").trim();
-    const title  = (it.title || "").trim();
-
-    const planText = normalizePlan(it.availability || "");
-    const planCls  = planBadgeClass(planText);
-
-    if (desktop){
-      // ✅ DESKTOP: sem "Código:", "Cantor:", etc (o cabeçalho já mostra)
-      html += `
-        <div class="row">
+        if (desktop) {
+            html += `
+        <div class="row ${view === "top" ? "row-top" : ""}">
+          ${view === "top" ? `<div class="cell-rank">${rankHtml}</div>` : ``}
           <div class="cell-code">${esc(codeStr)}</div>
           <div class="cell-title">${esc(title)}</div>
           <div class="cell-singer">${esc(singer)}</div>
-          <div class="cell-pack">${planText ? `<span class="plan-badge ${esc(planCls)}">${esc(planText)}</span>` : ``}</div>
+          <div class="cell-pack">
+            ${planText ? `<span class="${esc(planCls)}">${esc(planText)}</span>` : ``}
+          </div>
           <div class="cell-actions">
-            <button class="fav-btn ${favOn ? "on" : ""}" data-code="${esc(it.code)}"
-                    type="button"
-                    aria-label="${favOn ? "Remover dos favoritos" : "Adicionar aos favoritos"}"
-                    title="${favOn ? "Favorito" : "Favoritar"}">
-              <i class="bi ${favOn ? "bi-star-fill" : "bi-star"}" aria-hidden="true"></i>
+            <button class="fav-btn ${favOn ? "on" : ""}" data-code="${esc(it.code)}" type="button" aria-label="Favoritar">
+              <i class="bi ${favOn ? "bi-star-fill" : "bi-star"}"></i>
             </button>
           </div>
         </div>
       `;
-    } else {
-      // ✅ MOBILE: cards com labels + plano em linha própria (badge)
-      html += `
-        <div class="row" data-code="${esc(it.code)}">
+        } else {
+            html += `
+        <div class="row ${view === "top" ? "row-top" : ""}" data-code="${esc(it.code)}">
+          ${view === "top" ? `<div class="cell-rank-mobile">${rankHtml}</div>` : ``}
 
-          <div class="cell-top">
-            <div class="cell-code">
-              <span class="lbl">Código:</span>
-              <span class="val">${esc(codeStr)}</span>
+          <div class="cell-topline">
+            <div class="code-pack">
+              <span class="code">${esc(codeStr)}</span>
+              ${planText ? `<span class="plan-mini">${esc(planText)}</span>` : ``}
             </div>
-          </div>
 
-          <div class="cell-singer">
-            <span class="lbl">Cantor:</span>
-            <span class="val">${esc(singer)}</span>
+            <div class="cell-actions">
+              <button class="fav-btn ${favOn ? "on" : ""}" data-code="${esc(it.code)}" type="button" aria-label="Favoritar">
+                <i class="bi ${favOn ? "bi-star-fill" : "bi-star"}"></i>
+              </button>
+            </div>
           </div>
 
           <div class="cell-title">
@@ -274,181 +267,192 @@ function renderRows(items){
             <span class="val">${esc(title)}</span>
           </div>
 
-          ${planText ? `
-            <div class="cell-pack">
-              <span class="plan-badge ${esc(planCls)}">${esc(planText)}</span>
-            </div>
-          ` : ``}
-
-          <div class="cell-actions">
-            <button class="fav-btn ${favOn ? "on" : ""}" data-code="${esc(it.code)}"
-                    type="button"
-                    aria-label="${favOn ? "Remover dos favoritos" : "Adicionar aos favoritos"}"
-                    title="${favOn ? "Favorito" : "Favoritar"}">
-              <i class="bi ${favOn ? "bi-star-fill" : "bi-star"}" aria-hidden="true"></i>
-            </button>
+          <div class="cell-singer">
+            <span class="lbl">Cantor:</span>
+            <span class="val">${esc(singer)}</span>
           </div>
-
         </div>
       `;
+        }
     }
-  }
 
-  resultsDiv.innerHTML = html;
+    resultsDiv.innerHTML = html;
 }
 
-// ✅ re-render quando trocar breakpoint desktop/mobile
-let lastDesktopState = isDesktop();
-mqDesktop.addEventListener?.("change", () => {
-  const nowDesktop = isDesktop();
-  if (nowDesktop === lastDesktopState) return;
-  lastDesktopState = nowDesktop;
+// ===== API =====
+async function doSearch() {
+    collapseFiltersMobile();
 
-  // mantém status/contagem e só muda o layout
-  setCount(lastCount);
-  renderRows(lastItems);
+    view = "search";
+    panelTitle && (panelTitle.textContent = "Resultados");
+    setStatus("", "");
 
-  // fecha sidebar se entrou em desktop
-  if (nowDesktop) closeSidebar();
-});
+    const q = (qInput?.value || "").trim();
+    const tipo = getTipoSelecionado();
+    const plano = getPlanoSelecionado();
 
-async function doSearch(){
-  view = "search";
-  setNavActive(navSearch);
-  closeSidebarIfMobile();
-
-  panelTitle && (panelTitle.textContent = "Resultados");
-  setStatus("loading", "Buscando...");
-
-  const q = (qInput.value || "").trim();
-  const tipo = getTipoSelecionado();
-  const plano = getPlanoSelecionado();
-
-  let url = `/api/search?q=${encodeURIComponent(q)}&limit=200`;
-  if (tipo) url += `&tipo=${encodeURIComponent(tipo)}`;
-  if (plano) url += `&plano=${encodeURIComponent(plano)}`;
-
-  try{
-    const res = await fetch(url, { headers: { "Accept": "application/json" } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    const items = data.items || [];
-    setCount(items.length);
-    setStatus("success", items.length ? "Resultados carregados." : "Nenhum resultado.");
-    renderRows(items);
-  }catch(e){
-    console.error(e);
-    setCount(0);
-    setStatus("error", "Não consegui buscar agora. Verifique sua internet e tente novamente.", { action: doSearch, actionLabel: "Recarregar" });
-    lastItems = [];
-    clearRows();
-  }
-}
-
-async function loadFavorites(){
-  view = "favorites";
-  setNavActive(navFav);
-  closeSidebarIfMobile();
-
-  panelTitle && (panelTitle.textContent = "Meus Favoritos");
-
-  const favs = getFavs();
-  const tipo = getTipoSelecionado();
-  const plano = getPlanoSelecionado();
-
-  if (!favs.length){
-    setCount(0);
-    setStatus("info", "0 favorito(s)");
-    lastItems = [];
-    clearRows();
-    return;
-  }
-
-  setStatus("loading", "Carregando favoritos...");
-
-  try{
-    let url = `/api/favorites?codes=${encodeURIComponent(favs.join(","))}&limit=500`;
+    let url = `/api/search?q=${encodeURIComponent(q)}&limit=200`;
     if (tipo) url += `&tipo=${encodeURIComponent(tipo)}`;
     if (plano) url += `&plano=${encodeURIComponent(plano)}`;
 
-    const res = await fetch(url, { headers: { "Accept": "application/json" } });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
+    try {
+        const res = await fetch(url, {headers: {Accept: "application/json"}});
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
 
-    const items = data.items || [];
-    setCount(items.length);
-    setStatus("success", items.length ? "Favoritos carregados." : "Nenhum favorito nesse filtro.");
-    renderRows(items);
-  }catch(e){
-    console.error(e);
-    setCount(0);
-    setStatus("error", "Não consegui carregar seus favoritos agora. Tente novamente.", { action: loadFavorites, actionLabel: "Recarregar" });
-    lastItems = [];
-    clearRows();
-  }
+        const items = data.items || [];
+        setCount(items.length);
+        renderRows(items);
+
+        if (!items.length) setStatus("info", "Nenhum resultado.");
+    } catch (e) {
+        console.error(e);
+        setCount(0);
+        renderRows([]);
+        setStatus("error", "Erro ao buscar.");
+    }
 }
 
-function startVoice(){
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(!SR){
-    alert("Busca por voz não suportada neste navegador. Use Chrome.");
-    return;
-  }
-  const r = new SR();
-  r.lang = "pt-BR";
-  r.onresult = (e) => {
-    qInput.value = e.results[0][0].transcript;
-    doSearch();
-  };
-  r.start();
+async function loadFavorites() {
+    collapseFiltersMobile();
+
+    view = "favorites";
+    panelTitle && (panelTitle.textContent = "Meus Favoritos");
+    setStatus("", "");
+
+    try {
+        const res = await fetch(
+            `/api/fav/user?user_id=${encodeURIComponent(USER_ID)}&limit=500`,
+            {headers: {Accept: "application/json"}}
+        );
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+
+        const items = data.items || [];
+
+        // ✅ aqui está o conserto do contador:
+        // sincroniza localStorage com o servidor e atualiza badge
+        try {
+            const serverCodes = items.map(it => String(it.code)).filter(Boolean);
+            setFavs(serverCodes);
+        } catch {
+        }
+        updateFavCount();
+
+        setCount(items.length);
+        renderRows(items);
+
+        if (!items.length) setStatus("info", "Você ainda não favoritou nenhuma música.");
+    } catch (e) {
+        console.error(e);
+        setCount(0);
+        renderRows([]);
+        setStatus("error", "Erro ao carregar favoritos.");
+    }
 }
 
+
+// ✅ TOP 30 FAVORITOS DO USUÁRIO (rota REAL do seu backend: /api/top-favoritos)
+async function loadTopFavoritesUser() {
+    collapseFiltersMobile();
+
+    view = "top";
+    panelTitle && (panelTitle.textContent = "Top Favoritos (Meu Top 30)");
+    setStatus("", "");
+
+    try {
+        const res = await fetch(
+            `/api/top-favoritos?user_id=${encodeURIComponent(USER_ID)}&limit=30`,
+            {headers: {Accept: "application/json"}}
+        );
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+
+        // seu backend pode retornar array direto OU {items:[...]}
+        const list = Array.isArray(data) ? data : (data.items || []);
+
+        const items = list.map((it, idx) => ({
+            ...it,
+            rank: idx + 1,
+        }));
+
+        setCount(items.length);
+        renderRows(items);
+
+        if (!items.length) setStatus("info", "Você ainda não tem favoritos suficientes.");
+    } catch (e) {
+        console.error(e);
+        setCount(0);
+        renderRows([]);
+        setStatus("error", "Erro ao carregar seu Top Favoritos.");
+    }
+}
+
+
+// ===== Eventos =====
 resultsDiv?.addEventListener("click", async (e) => {
-  const btn = e.target?.closest?.("button[data-code]");
-  if (!btn) return;
+    const btn = e.target?.closest?.("button[data-code]");
+    if (!btn) return;
 
-  const code = btn.getAttribute("data-code");
-  const nowFav = toggleFav(code);
-  updateFavCount();
+    const code = btn.getAttribute("data-code");
+    const nowFav = toggleFav(code);
 
-  btn.classList.toggle("on", nowFav);
+    btn.classList.toggle("on", nowFav);
 
-  btn.title = nowFav ? "Favorito" : "Favoritar";
-  btn.setAttribute("aria-label", nowFav ? "Remover dos favoritos" : "Adicionar aos favoritos");
+    const icon = btn.querySelector("i");
+    if (icon) icon.className = nowFav ? "bi bi-star-fill" : "bi bi-star";
 
-  const icon = btn.querySelector("i");
-  if (icon){
-    icon.classList.toggle("bi-star-fill", nowFav);
-    icon.classList.toggle("bi-star", !nowFav);
-  }
-
-  if (view === "favorites" && !nowFav){
-    await loadFavorites();
-  }
+    if (view === "favorites" && !nowFav) {
+        await loadFavorites();
+    }
 });
 
 btnSearch?.addEventListener("click", doSearch);
 qInput?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") doSearch();
+    if (e.key === "Enter") doSearch();
 });
 
-navSearch?.addEventListener("click", doSearch);
-navFav?.addEventListener("click", loadFavorites);
+btnFavUser?.addEventListener("click", loadFavorites);
+btnTopFav?.addEventListener("click", loadTopFavoritesUser);
 
-btnFavTop?.addEventListener("click", () => {
-  loadFavorites();
-  closeSidebar(); // se o drawer estiver aberto
+filterTipo?.addEventListener("change", () => {
+    if (view === "favorites") loadFavorites();
+    else if (view === "top") loadTopFavoritesUser();
+    else doSearch();
 });
 
+filterPlano?.addEventListener("change", () => {
+    if (view === "favorites") loadFavorites();
+    else if (view === "top") loadTopFavoritesUser();
+    else doSearch();
+});
 
-btnVoice?.addEventListener("click", startVoice);
+// ===== Toggle filtros (mobile) =====
+(function () {
+    if (!btnFiltersToggle || !sidebarEl) return;
 
-filterTipo?.addEventListener("change", () => view === "favorites" ? loadFavorites() : doSearch());
-filterPlano?.addEventListener("change", () => view === "favorites" ? loadFavorites() : doSearch());
+    function apply(collapsed) {
+        sidebarEl.classList.toggle("filters-collapsed", collapsed);
+        btnFiltersToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
 
-// estado inicial
+        if (filtersChevron) {
+            filtersChevron.classList.remove("bi-chevron-up", "bi-chevron-down");
+            filtersChevron.classList.add(collapsed ? "bi-chevron-down" : "bi-chevron-up");
+        }
+    }
+
+    btnFiltersToggle.addEventListener("click", () => {
+        const collapsed = sidebarEl.classList.contains("filters-collapsed");
+        apply(!collapsed);
+    });
+
+    apply(false);
+})();
+
+// ===== Init =====
 setCount(0);
-setStatus("info", "Digite para buscar músicas");
-clearRows();
+setStatus("", "");
+renderRows([]);
 updateFavCount();

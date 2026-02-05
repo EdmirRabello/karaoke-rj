@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+
+# Virtualenv
+.venv/
+venv/
+
+# IDEs
+.idea/
+.vscode/
+
+# Build / cache
+*.sqlite3
+*.db-journal
+
+# App data (decida se quer versionar o banco)
+data/karaoke.db
+
+# Backups locais
+_backup_original/

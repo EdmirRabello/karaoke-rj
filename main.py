@@ -3,8 +3,7 @@ from __future__ import annotations
 from typing import Optional, List, Any
 
 from fastapi import FastAPI, Query, Request
-from fastapi.responses import HTMLResponse, Response
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse, Response, FileResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -19,18 +18,22 @@ app.add_middleware(GZipMiddleware, minimum_size=800)
 # Static assets (/static/...)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+
 # ✅ Service Worker NO ROOT, mas arquivo fica em static/js/sw.js (como você quer)
 @app.get("/sw.js", include_in_schema=False)
 def service_worker() -> Response:
     return FileResponse("static/js/sw.js", media_type="application/javascript")
+
 
 # ✅ (Opcional) também permite acessar direto no caminho onde ele está
 @app.get("/static/js/sw.js", include_in_schema=False)
 def service_worker_static() -> Response:
     return FileResponse("static/js/sw.js", media_type="application/javascript")
 
+
 # Templates (pages)
 templates = Jinja2Templates(directory="templates")
+
 
 # Cache headers (melhora performance em 4G/5G)
 @app.middleware("http")
@@ -50,7 +53,7 @@ async def add_cache_headers(request: Request, call_next):
         elif any(path.endswith(ext) for ext in [".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".mp4"]):
             resp.headers["Cache-Control"] = "public, max-age=2592000"  # 30 dias
         else:
-            resp.headers["Cache-Control"] = "public, max-age=86400"    # 1 dia
+            resp.headers["Cache-Control"] = "public, max-age=86400"  # 1 dia
         return resp
 
     return resp
@@ -63,6 +66,12 @@ ALLOWED_PLANOS = {"PLUS", "BASICO"}
 @app.on_event("startup")
 def on_startup():
     init_db()
+
+    # ✅ Índices (se já existirem, não recria)
+    with get_conn() as con:
+        con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id, code)")
+        con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_code ON favorites(code)")
+        con.commit()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -92,18 +101,18 @@ def normalize_plano(plano: Optional[str]) -> Optional[str]:
 def availability_from_package(pkg: str) -> str:
     pkg = (pkg or "").strip().upper()
     if pkg == "PLUS":
-        return "SOMENTE PLUS"
+        return "PLUS"
     if pkg == "BASICO":
-        return "PLUS e BÁSICO"
+        return "BÁSICO"
     return "INDISPONÍVEL"
 
 
 @app.get("/api/search")
 def search(
-    q: str = Query("", description="Busca por código, título, cantor ou trecho"),
-    tipo: Optional[str] = Query(None, description="NAC / INT / GOSPEL"),
-    plano: Optional[str] = Query(None, description="PLUS / BASICO"),
-    limit: int = Query(200, ge=1, le=1000),
+        q: str = Query("", description="Busca por código, título, cantor ou trecho"),
+        tipo: Optional[str] = Query(None, description="NAC / INT / GOSPEL"),
+        plano: Optional[str] = Query(None, description="PLUS / BASICO"),
+        limit: int = Query(200, ge=1, le=1000),
 ):
     q = (q or "").strip()
     tipo = normalize_tipo(tipo)
@@ -123,9 +132,12 @@ def search(
         where.append("type = ?")
         params.append(tipo)
 
-    if plano:
+    # Plano:
+    # - PLUS = Todos (não filtra)
+    # - BASICO = filtra só basico
+    if plano == "BASICO":
         where.append("package = ?")
-        params.append(plano)
+        params.append("BASICO")
 
     if q:
         q_low = q.lower()
@@ -183,10 +195,10 @@ def search(
 
 @app.get("/api/favorites")
 def favorites(
-    codes: str = Query(..., description="lista separada por vírgula"),
-    tipo: Optional[str] = Query(None, description="NAC / INT / GOSPEL"),
-    plano: Optional[str] = Query(None, description="PLUS / BASICO"),
-    limit: int = Query(500, ge=1, le=2000),
+        codes: str = Query(..., description="lista separada por vírgula"),
+        tipo: Optional[str] = Query(None, description="NAC / INT / GOSPEL"),
+        plano: Optional[str] = Query(None, description="PLUS / BASICO"),
+        limit: int = Query(500, ge=1, le=2000),
 ):
     tipo = normalize_tipo(tipo)
     plano = normalize_plano(plano)
@@ -205,9 +217,12 @@ def favorites(
         where.append("type = ?")
         params.append(tipo)
 
-    if plano:
+    # Plano:
+    # - PLUS = Todos (não filtra)
+    # - BASICO = filtra só basico
+    if plano == "BASICO":
         where.append("package = ?")
-        params.append(plano)
+        params.append("BASICO")
 
     where_sql = " AND ".join(where)
     if where_sql:
@@ -239,6 +254,110 @@ def favorites(
         items.append(d)
 
     return {"count": len(items), "items": items}
+
+
+# ✅ TOP 50 favoritos (global) — usa o MESMO padrão do projeto (get_conn)
+import time
+
+_TOP_CACHE = {"ts": 0.0, "data": None}
+_TOP_TTL = 30  # segundos
+
+
+@app.get("/api/top-favoritos")
+def top_favoritos():
+    now = time.time()
+    cached = _TOP_CACHE["data"]
+    if cached is not None and (now - _TOP_CACHE["ts"]) < _TOP_TTL:
+        return cached
+
+    sql = """
+          SELECT s.code,
+                 s.title,
+                 s.singer,
+                 s.package,
+                 COUNT(f.code) as total
+          FROM favorites f
+                   JOIN songs s ON s.code = f.code
+          GROUP BY f.code
+          ORDER BY total DESC LIMIT 50 \
+          """
+
+    with get_conn() as con:
+        rows = con.execute(sql).fetchall()
+
+    data = [dict(r) for r in rows]
+    _TOP_CACHE["ts"] = now
+    _TOP_CACHE["data"] = data
+    return data
+
+from fastapi import Query
+
+@app.get("/api/fav/user")
+def fav_user(user_id: int = Query(...), limit: int = Query(500, ge=1, le=2000)):
+    sql = """
+      SELECT
+        s.code,
+        s.title,
+        s.singer,
+        s.snippet,
+        s.package,
+        s.type,
+        s.duplicated
+      FROM favorites f
+      JOIN songs s ON s.code = f.code
+      WHERE f.user_id = ?
+      ORDER BY s.singer COLLATE NOCASE ASC, s.title COLLATE NOCASE ASC, s.code ASC
+      LIMIT ?
+    """
+
+    with get_conn() as con:
+        rows = con.execute(sql, (user_id, limit)).fetchall()
+
+    items = []
+    for r in rows:
+        d = dict(r)
+        d["availability"] = availability_from_package(d.get("package", ""))
+        items.append(d)
+
+    return {"count": len(items), "items": items}
+
+from pydantic import BaseModel
+
+
+class FavRegisterIn(BaseModel):
+    user_id: int
+    code: int
+
+
+@app.post("/api/fav/register")
+def fav_register(payload: FavRegisterIn):
+    user_id = int(payload.user_id)
+    code = int(payload.code)
+
+    with get_conn() as con:
+        # evita duplicar o mesmo favorito do mesmo usuário
+        con.execute(
+            "INSERT OR IGNORE INTO favorites (user_id, code) VALUES (?, ?)",
+            (user_id, code)
+        )
+        con.commit()
+
+    return {"ok": True, "user_id": user_id, "code": code}
+
+
+@app.post("/api/fav/remove")
+def fav_remove(payload: FavRegisterIn):
+    user_id = int(payload.user_id)
+    code = int(payload.code)
+
+    with get_conn() as con:
+        con.execute(
+            "DELETE FROM favorites WHERE user_id = ? AND code = ?",
+            (user_id, code)
+        )
+        con.commit()
+
+    return {"ok": True, "user_id": user_id, "code": code}
 
 
 # ✅ Silencia o log do Chrome DevTools (opcional)

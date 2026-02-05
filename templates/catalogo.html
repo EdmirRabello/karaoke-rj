@@ -3,168 +3,167 @@
 {% set page_description = "Busque no catálogo do Karaokê RJ: código, música, artista e filtros por tipo e plano." %}
 
 {% block page_css %}
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/catalog.css') }}">
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/catalog.css') }}">
 {% endblock %}
 
 {% block content %}
-<!-- HEADER (reaproveita o base.css) -->
-<header class="k-header">
-    <div class="k-container k-header__inner">
-        <a class="k-brand" href="/">
-            <img src="{{ request.url_for('static', path='img/cantus_logo.png') }}" alt="Logo Karaokê RJ" loading="lazy" decoding="async">
-            <div class="k-brand__name">
-                <b>Catálogo</b>
-                <span>Busca rápida + favoritos</span>
-            </div>
-        </a>
 
-        <nav class="k-nav" aria-label="Navegação">
-            <a href="/">Home</a>
-            <a href="/catalogo">Catálogo</a>
-        </nav>
+    <!-- =========================================================
+         CATÁLOGO (catalogo.html)
+         - Header sticky vem do base.css
+         - No mobile: filtro fica no topo e o resultado fica colado nele
+         - O HERO abaixo é exibido no desktop e ocultado no mobile (catalog.css)
+         ========================================================= -->
+    <header class="k-header">
+        <div class="k-container k-header__inner">
 
-        <!-- ✅ agora focado em ícones (mobile-first) -->
-        <div class="k-actions k-actions--icons" aria-label="Ações">
-            <!-- ✅ Filtros: somente ícone -->
-            <button class="k-btn k-btn--primary k-btn--icon" id="btnHamburger" type="button"
-                    aria-label="Abrir filtros" title="Abrir filtros">
-                <i class="bi bi-sliders2"></i>
-            </button>
-
-            <button class="k-btn k-btn--primary k-btn--icon" id="btnFavTop" type="button" title="Favoritos" aria-label="Favoritos">
-                <i class="bi bi-heart-fill"></i>
-                <!-- ⚠️ não use id duplicado: o contador é atualizado via classe no JS -->
-                <span class="favCount fav-badge" aria-hidden="true"></span>
-            </button>
-
-            <!-- ✅ WhatsApp: somente ícone -->
-            <a class="k-btn k-btn--primary k-btn--icon"
-               href="https://wa.me/5521996504516?text=%F0%9F%8E%A4%20Ol%C3%A1!%20Quero%20um%20or%C3%A7amento%20e%20tamb%C3%A9m%20tenho%20d%C3%BAvida%20sobre%20o%20cat%C3%A1logo."
-               target="_blank" rel="noopener"
-               aria-label="Abrir WhatsApp" title="WhatsApp">
-                <i class="bi bi-whatsapp"></i>
+            <a class="k-brand" href="/">
+                <img src="{{ request.url_for('static', path='img/cantus_logo.png') }}"
+                     alt="Logo Karaokê RJ"
+                     loading="lazy" decoding="async">
+                <div class="k-brand__name">
+                    <b>Catálogo</b>
+                    <span>Busca rápida + favoritos</span>
+                </div>
             </a>
+
+            <nav class="k-nav" aria-label="Navegação">
+                <a href="/">Home</a>
+                <a class="active" href="/catalogo">Catálogo</a>
+            </nav>
+
+            <!-- AÇÕES NO TOPO (WhatsApp + Favoritos + Top) -->
+            <div class="k-actions k-actions--icons" aria-label="Ações">
+
+                <!-- Favoritos do usuário -->
+                <button class="k-btn k-btn--primary k-btn--icon"
+                        id="btnFavUser"
+                        type="button"
+                        aria-label="Meus Favoritos"
+                        title="Meus Favoritos">
+                    <i class="bi bi-star-fill"></i>
+                    <span class="fav-badge" aria-hidden="true"></span>
+                </button>
+
+
+                <!-- Top Favoritos (ranking global) -->
+                <button class="k-btn k-btn--primary k-btn--icon"
+                        id="btnTopFav"
+                        type="button"
+                        aria-label="Top Favoritos"
+                        title="Top Favoritos">
+                    <i class="bi bi-fire"></i>
+                </button>
+
+                <!-- Home, antigo whattsapp -->
+                <a class="k-btn k-btn--primary k-btn--icon k-btn--home"
+                   href="/"
+                   aria-label="Ir para Home"
+                   title="Home">
+                    <i class="bi bi-house-door-fill"></i>
+
+                </a>
+
+
+            </div>
+
+        </div>
+    </header>
+
+    <div class="k-container">
+
+        <section class="cat-hero">
+            <h1>Catálogo de Músicas 🎶</h1>
+            <p>Pesquise por <b>código</b>, <b>título</b> ou <b>cantor</b>.</p>
+        </section>
+
+        <div class="cat-layout">
+
+            <!-- FILTROS (sidebar)
+                 - No mobile: fica no topo (fixo no layout)
+                 - Botão chevron recolhe/expande (JS: .filters-collapsed)
+                 - Padrão: ABERTO (Opção B)
+            -->
+            <aside class="sidebar" id="sidebar" aria-label="Filtros e busca">
+                <div class="sidebar__head">
+                    <b>Buscar & Filtrar</b>
+
+                    <button id="btnFiltersToggle" type="button"
+                            class="k-btn k-btn--icon"
+                            aria-label="Abrir/fechar filtros"
+                            aria-expanded="true"
+                            title="Abrir/fechar filtros">
+                        <i id="filtersChevron" class="bi bi-chevron-up"></i>
+                    </button>
+                </div>
+
+                <div class="sidebar__body">
+
+                    <div class="field">
+                        <label for="q">Busca</label>
+                        <input id="q" type="search"
+                               placeholder="Ex.: 01234 • Evidências • Gusttavo Lima"
+                               autocomplete="off">
+                    </div>
+
+                    <div class="field">
+                        <label for="filterTipo">Tipo</label>
+                        <select id="filterTipo">
+                            <option value="">Todos</option>
+                            <option value="NAC">Nacional</option>
+                            <option value="INT">Internacional</option>
+                            <option value="GOSPEL">Gospel</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="filterPlano">Plano</label>
+                        <select id="filterPlano">
+                            <option value="">Todos (PLUS)</option>
+                            <option value="BASICO">Básico</option>
+                        </select>
+                    </div>
+
+                    <div class="sidebar__actions">
+                        <button class="k-btn k-btn--primary" id="btnSearch" type="button">
+                            <i class="bi bi-search"></i> Buscar
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- RESULTADOS (panel)
+                 - No mobile: fica colado no filtro (sem gap)
+                 - Somente a lista (#results) rola, para economizar espaço
+            -->
+            <section class="panel">
+                <div class="panel__head">
+                    <b id="panelTitle">Resultados</b>
+                    <div class="count" id="countCard">🎵 <b>0</b> músicas encontradas</div>
+                </div>
+
+                <div class="panel__body">
+                    <!-- Status continua existindo, mas vamos esconder quando não precisar -->
+                    <div class="status status-info" id="status"></div>
+
+                    <div class="results-wrap">
+                        <div class="results-head" id="resultsHead">
+                            <div>Código</div>
+                            <div>Título</div>
+                            <div>Artista</div>
+                            <div>Plano</div>
+                            <div></div>
+                        </div>
+
+                        <div class="results" id="results"></div>
+                    </div>
+                </div>
+            </section>
+
         </div>
     </div>
-</header>
 
-<div class="k-container">
-    <section class="cat-hero">
-        <h1>Catálogo de Músicas 🎶</h1>
-        <p>Pesquise por <b>código</b>, <b>título</b> ou <b>cantor</b>. Use filtros e salve favoritos.</p>
-    </section>
+    <script src="{{ request.url_for('static', path='js/theme.js') }}" defer></script>
+    <script src="{{ request.url_for('static', path='js/catalog.js') }}" defer></script>
 
-    <div class="cat-layout">
-        <!-- SIDEBAR (desktop) / DRAWER (mobile) -->
-        <aside class="sidebar" id="sidebar" aria-label="Filtros e busca">
-            <div class="sidebar__head">
-                <b>Buscar & Filtrar</b>
-                <button class="k-btn k-btn--icon" id="btnCollapse" type="button" title="Fechar"
-                        aria-label="Fechar filtros">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <div class="sidebar__body">
-                <div class="field">
-                    <label for="q">Busca</label>
-                    <input id="q" type="search" placeholder="Ex.: 01234 • Evidências • Gusttavo Lima"
-                           autocomplete="off">
-                </div>
-
-                <div class="field">
-                    <label for="filterTipo">Tipo</label>
-                    <select id="filterTipo">
-                        <option value="">Todos</option>
-                        <option value="NAC">Nacional</option>
-                        <option value="INT">Internacional</option>
-                        <option value="GOSPEL">Gospel</option>
-                    </select>
-                </div>
-
-                <div class="field">
-                    <label for="filterPlano">Plano</label>
-                    <select id="filterPlano">
-                        <option value="">Todos</option>
-                        <option value="PLUS">Plus</option>
-                        <option value="BASICO">Básico</option>
-                    </select>
-                </div>
-
-                
-                <div class="sidebar__actions">
-                    <button class="k-btn k-btn--primary" id="btnSearch" type="button">
-                        <i class="bi bi-search"></i> Buscar
-                    </button>
-
-                    <button class="k-btn k-btn--primary" id="navFav" type="button" title="Favoritos">
-                        <i class="bi bi-heart-fill"></i> Favoritos
-                        <span class="favCount fav-badge" aria-hidden="true"></span>
-                    </button>
-
-                    <button class="k-btn k-btn--primary" id="btnVoice" type="button" title="Busca por voz (Chrome)">
-                        <i class="bi bi-mic"></i> Voz
-                    </button>
-                </div>
-
-            </div>
-        </aside>
-
-        <!-- RESULTADOS -->
-        <section class="panel" aria-label="Resultados">
-            <div class="panel__head">
-                <b id="panelTitle">Resultados</b>
-                <div class="count" id="countCard">🎵 <b>0</b> músicas</div>
-            </div>
-
-            <div class="panel__body">
-                <div class="status" id="status">Digite algo e clique em <b>Buscar</b> — ou use <b>Voz</b>.</div>
-
-                <!-- Cabeçalho fixo dos resultados (só a lista rola) -->
-                <div class="results-wrap" aria-label="Lista de resultados">
-                    <div class="results-head" id="resultsHead" aria-hidden="true">
-                        <div>Código</div>
-                        <div>Título</div>
-                        <div>Artista</div>
-                        <div>Plano</div>
-                        <div></div>
-                    </div>
-                    <div class="results" id="results"></div>
-                </div>
-            </div>
-        </section>
-    </div>
-</div>
-
-<div id="overlay" aria-hidden="true" hidden></div>
-
-<!-- PWA: registra Service Worker -->
-<script>
-    // Comentário em PT-BR: registra o Service Worker para cache offline / PWA.
-
-    if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-            navigator.serviceWorker
-                .register("/static/js/sw.js", {scope: "/"})
-                .catch(err => console.log("SW falhou:", err));
-        });
-    }
-
-
-</script>
-
-<!-- Tema global (3 temas) -->
-<script src="{{ request.url_for('static', path='js/theme.js') }}" defer></script>
-
-<!-- JS do catálogo (mantém funcionalidades: busca, voz, favoritos, menu mobile) -->
-<script src="{{ request.url_for('static', path='js/catalog.js') }}" defer></script>
-{% endblock %}
-
-{% block page_scripts %}
-  <script src="{{ request.url_for('static', path='js/catalog.js') }}" defer></script>
-  <!-- Service Worker (PWA) -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {});
-    }
-  </script>
 {% endblock %}
