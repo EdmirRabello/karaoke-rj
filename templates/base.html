@@ -3,144 +3,186 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
 
-  <title>{{ page_title }}</title>
+    <title>{{ page_title }}</title>
 
-  {% if page_description %}
-  <meta name="description" content="{{ page_description }}"/>
-  {% endif %}
+    {% if page_description %}
+        <meta name="description" content="{{ page_description }}"/>
+    {% endif %}
 
-  <meta name="theme-color" content="#05060a"/>
-  <meta name="color-scheme" content="light dark"/>
+    <meta name="theme-color" content="#05060a"/>
+    <meta name="color-scheme" content="light dark"/>
 
-  <link rel="manifest" href="{{ request.url_for('static', path='manifest.json') }}">
-  <link rel="icon" href="{{ request.url_for('static', path='img/minha-logo.png') }}">
-  <link rel="apple-touch-icon" href="{{ request.url_for('static', path='img/minha-logo.png') }}">
+    <link rel="manifest" href="{{ request.url_for('static', path='manifest.json') }}">
+    <link rel="icon" href="{{ request.url_for('static', path='img/minha-logo.png') }}">
+    <link rel="apple-touch-icon" href="{{ request.url_for('static', path='img/minha-logo.png') }}">
 
-  <!-- Ícones -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Ícones -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-  <!-- CSS base -->
-  <link rel="stylesheet" href="{{ request.url_for('static', path='css/base.css') }}">
+    <!-- CSS base -->
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/base.css') }}">
 
-  {% block page_css %}{% endblock %}
+    {% block page_css %}{% endblock %}
+    {% block head_extra %}{% endblock %}
 
-  <!-- Tema -->
-  <script src="{{ request.url_for('static', path='js/theme.js') }}" defer></script>
+    <!-- Tema -->
+    <script src="{{ request.url_for('static', path='js/theme.js') }}" defer></script>
 
-  <!-- Seu arquivo original (mantido) -->
-  <script src="{{ request.url_for('static', path='js/image-viewer.js') }}" defer></script>
-
-  {% block head_extra %}{% endblock %}
+    <!-- Seu arquivo original (mantido) -->
+    <script src="{{ request.url_for('static', path='js/image-viewer.js') }}" defer></script>
 </head>
 
 <body>
-  {% block content %}{% endblock %}
+{% block content %}{% endblock %}
 
-  {% block page_scripts %}{% endblock %}
+{% block page_scripts %}{% endblock %}
 
-  <!-- IMAGE VIEWER -->
-  <div class="img-viewer" id="imgViewer" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Visualizador de imagem">
+<!-- IMAGE VIEWER -->
+<div class="img-viewer" id="imgViewer"
+     aria-hidden="true" role="dialog" aria-modal="true" aria-label="Visualizador de imagem">
     <button class="img-viewer__close" id="imgViewerClose" type="button" aria-label="Fechar">
-      <i class="bi bi-x-lg" aria-hidden="true"></i>
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
     </button>
-    <img class="img-viewer__img" id="imgViewerImg" alt="Imagem ampliada" loading="eager" decoding="async">
-  </div>
+    <img class="img-viewer__img" id="imgViewerImg"
+         alt="Imagem ampliada" loading="eager" decoding="async">
+</div>
 
-  <!-- ✅ FALLBACK GARANTIDO (não mexe no seu script; só garante que o click funcione) -->
-  <script>
-    (function(){
-      // Evita duplicar caso o seu image-viewer.js já tenha rodado
-      if (window.__krj_imgviewer_bound) return;
-      window.__krj_imgviewer_bound = true;
+<!-- ✅ FALLBACK GARANTIDO (não mexe no seu script; só garante que o click funcione) -->
+<script>
+    (function () {
+        if (window.__krj_imgviewer_bound) return;
+        window.__krj_imgviewer_bound = true;
 
-      function ready(fn){
-        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
-        else fn();
-      }
-
-      ready(function(){
-        const viewer = document.getElementById("imgViewer");
-        const imgEl = document.getElementById("imgViewerImg");
-        const closeBtn = document.getElementById("imgViewerClose");
-        if (!viewer || !imgEl || !closeBtn) return;
-
-        let lastFocus = null;
-
-        function openViewer(src, alt){
-          lastFocus = document.activeElement;
-          imgEl.src = src;
-          imgEl.alt = alt || "Imagem ampliada";
-          viewer.classList.add("is-open");
-          viewer.setAttribute("aria-hidden","false");
-          document.documentElement.classList.add("no-scroll");
-          document.body.classList.add("no-scroll");
-          try{ closeBtn.focus({ preventScroll:true }); }catch(e){ closeBtn.focus(); }
+        function ready(fn) {
+            if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn);
+            else fn();
         }
 
-        function closeViewer(){
-          viewer.classList.remove("is-open");
-          viewer.setAttribute("aria-hidden","true");
-          document.documentElement.classList.remove("no-scroll");
-          document.body.classList.remove("no-scroll");
-          imgEl.removeAttribute("src");
-          imgEl.removeAttribute("alt");
-          if (lastFocus && typeof lastFocus.focus === "function"){
-            try{ lastFocus.focus({ preventScroll:true }); }catch(e){ lastFocus.focus(); }
-          }
-        }
+        ready(function () {
+            const viewer = document.getElementById("imgViewer");
+            const imgEl = document.getElementById("imgViewerImg");
+            const closeBtn = document.getElementById("imgViewerClose");
+            if (!viewer || !imgEl || !closeBtn) return;
 
-        function getFullSrc(img){
-          if (!img) return null;
-          return img.getAttribute("data-full") || img.currentSrc || img.src;
-        }
+            let lastFocus = null;
 
-        // Delegação: clique em qualquer .aluguel-media (aluguel/vendas)
-        document.addEventListener("click", function(ev){
-          const t = ev.target;
-          if (!t || !t.closest) return;
-          const media = t.closest(".aluguel-media");
-          if (!media) return;
+            function openViewer(src, alt) {
+                lastFocus = document.activeElement;
+                imgEl.src = src;
+                imgEl.alt = alt || "Imagem ampliada";
+                viewer.classList.add("is-open");
+                viewer.setAttribute("aria-hidden", "false");
+                document.documentElement.classList.add("no-scroll");
+                document.body.classList.add("no-scroll");
+                try {
+                    closeBtn.focus({preventScroll: true});
+                } catch (e) {
+                    closeBtn.focus();
+                }
+            }
 
-          const img = media.querySelector("img");
-          if (!img) return;
+            function closeViewer() {
+                viewer.classList.remove("is-open");
+                viewer.setAttribute("aria-hidden", "true");
+                document.documentElement.classList.remove("no-scroll");
+                document.body.classList.remove("no-scroll");
+                imgEl.removeAttribute("src");
+                imgEl.removeAttribute("alt");
+                if (lastFocus && typeof lastFocus.focus === "function") {
+                    try {
+                        lastFocus.focus({preventScroll: true});
+                    } catch (e) {
+                        lastFocus.focus();
+                    }
+                }
+            }
 
-          const src = getFullSrc(img);
-          if (!src) return;
+            function getFullSrc(img) {
+                if (!img) return null;
+                return img.getAttribute("data-full") || img.currentSrc || img.src;
+            }
 
-          ev.preventDefault();
-          openViewer(src, img.alt || "Imagem");
-        }, { passive:false });
+            document.addEventListener("click", function (ev) {
+                const t = ev.target;
+                if (!t || !t.closest) return;
+                const media = t.closest(".aluguel-media");
+                if (!media) return;
 
-        // Fechar
-        closeBtn.addEventListener("click", function(e){
-          e.preventDefault();
-          closeViewer();
+                const img = media.querySelector("img");
+                if (!img) return;
+
+                const src = getFullSrc(img);
+                if (!src) return;
+
+                ev.preventDefault();
+                openViewer(src, img.alt || "Imagem");
+            }, {passive: false});
+
+            closeBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                closeViewer();
+            });
+
+            viewer.addEventListener("click", function (e) {
+                if (e.target === viewer) closeViewer();
+            });
+
+            document.addEventListener("keydown", function (e) {
+                if (e.key === "Escape" && viewer.classList.contains("is-open")) closeViewer();
+            });
+
+            imgEl.addEventListener("dragstart", function (e) {
+                e.preventDefault();
+            });
         });
-
-        viewer.addEventListener("click", function(e){
-          if (e.target === viewer) closeViewer();
-        });
-
-        document.addEventListener("keydown", function(e){
-          if (e.key === "Escape" && viewer.classList.contains("is-open")) closeViewer();
-        });
-
-        imgEl.addEventListener("dragstart", function(e){ e.preventDefault(); });
-      });
     })();
-  </script>
+</script>
 
-  <!-- ✅ PWA: registra Service Worker UMA ÚNICA VEZ -->
+<!-- ✅ PWA: registra Service Worker UMA ÚNICA VEZ (com update seguro) -->
+
+  <!-- 🔥 AQUI: SCRIPT DO SERVICE WORKER SEMPRE NO FINAL DO BODY -->
   <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/static/js/sw.js", { scope: "/" }).catch(() => {});
-      });
-    }
+  (function () {
+    if (!("serviceWorker" in navigator)) return;
+
+    window.addEventListener("load", async () => {
+      try {
+        const reg = await navigator.serviceWorker.register("/sw.js");
+
+        function refreshOnce() {
+          if (window.__sw_reloaded) return;
+          window.__sw_reloaded = true;
+          window.location.reload();
+        }
+
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        }
+
+        reg.addEventListener("updatefound", () => {
+          const sw = reg.installing;
+          if (!sw) return;
+
+          sw.addEventListener("statechange", () => {
+            if (sw.state === "installed" && reg.waiting) {
+              reg.waiting.postMessage({ type: "SKIP_WAITING" });
+            }
+          });
+        });
+
+        navigator.serviceWorker.addEventListener("controllerchange", refreshOnce);
+
+      } catch (e) {
+        console.log("SW register falhou:", e);
+      }
+    });
+  })();
   </script>
 
 </body>
 </html>
+
+

@@ -19,16 +19,20 @@ app.add_middleware(GZipMiddleware, minimum_size=800)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-# ✅ Service Worker NO ROOT, mas arquivo fica em static/js/sw.js (como você quer)
+from pathlib import Path
+from fastapi.responses import FileResponse
+
+BASE_DIR = Path(__file__).resolve().parent
+SW_PATH = BASE_DIR / "static" / "sw.js"   # ✅ AGORA É static/sw.js
+
 @app.get("/sw.js", include_in_schema=False)
-def service_worker() -> Response:
-    return FileResponse("static/js/sw.js", media_type="application/javascript")
+def service_worker():
+    return FileResponse(str(SW_PATH), media_type="application/javascript")
 
-
-# ✅ (Opcional) também permite acessar direto no caminho onde ele está
-@app.get("/static/js/sw.js", include_in_schema=False)
-def service_worker_static() -> Response:
-    return FileResponse("static/js/sw.js", media_type="application/javascript")
+# (opcional) se você quiser também servir por /static/sw.js
+@app.get("/static/sw.js", include_in_schema=False)
+def service_worker_static():
+    return FileResponse(str(SW_PATH), media_type="application/javascript")
 
 
 # Templates (pages)
