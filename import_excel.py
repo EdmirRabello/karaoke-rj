@@ -1,7 +1,9 @@
 from __future__ import annotations
+
 import argparse
 import pandas as pd
 from unidecode import unidecode
+
 from db import init_db, get_conn
 
 COLUMN_MAP = {
@@ -15,7 +17,7 @@ COLUMN_MAP = {
 }
 
 ALLOWED_PACKAGES = {"BASICO", "PLUS"}
-ALLOWED_TYPES = {"NAC", "INT", "GOSPEL"}  # ✅ agora inclui GOSPEL
+ALLOWED_TYPES = {"NAC", "INT", "GOSPEL"}  # inclui GOSPEL
 
 
 def norm(s: str | None) -> str:
@@ -57,9 +59,6 @@ def load_excel(path: str) -> pd.DataFrame:
     df.loc[~df["type"].isin(ALLOWED_TYPES), "type"] = ""
 
     # duplicated: tenta tratar 0/1 corretamente
-    # - se vier vazio -> 0
-    # - se vier "1" -> 1
-    # - se vier texto não numérico -> 1 (porque marcou)
     dup_num = pd.to_numeric(df["duplicated"], errors="coerce")
     df["duplicated"] = dup_num.fillna(0).astype(int)
     df["duplicated"] = (df["duplicated"] != 0).astype(int)
@@ -72,21 +71,23 @@ def load_excel(path: str) -> pd.DataFrame:
     return df
 
 
-def upsert(df: pd.DataFrame, replace: bool = True) -> int:
+def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
+    """
+    replace=False (padrão): UPSERT por code (insere novos e atualiza existentes)
+    replace=True: apaga songs e recria tudo do zero (evite em produção)
+    Retorna contagens reais: novos, atualizados, total.
+    """
     init_db()
     with get_conn() as con:
         cur = con.cursor()
 
-        if replace:
-            cur.execute("DELETE FROM songs;")
-
-        rows = []
         cols = [
             "code", "title", "singer", "snippet",
             "package", "type", "duplicated",
             "title_norm", "singer_norm", "snippet_norm"
         ]
 
+        rows = []
         for r in df[cols].itertuples(index=False):
             rows.append((
                 int(r.code),
@@ -101,28 +102,77 @@ def upsert(df: pd.DataFrame, replace: bool = True) -> int:
                 str(r.snippet_norm) if r.snippet_norm is not None else ""
             ))
 
+        total = len(rows)
+
+        if replace:
+            cur.execute("DELETE FROM songs;")
+            cur.executemany(
+                """
+                INSERT INTO songs
+                  (code,title,singer,snippet,package,type,duplicated,title_norm,singer_norm,snippet_norm)
+                VALUES (?,?,?,?,?,?,?,?,?,?)
+                """,
+                rows
+            )
+            con.commit()
+            return {"total": total, "novos": total, "atualizados": 0}
+
+        # contar novos vs existentes antes
+        codes = [r[0] for r in rows]
+        novos = 0
+        batch = 900  # evita limite de parâmetros
+
+        for i in range(0, len(codes), batch):
+            chunk = codes[i:i + batch]
+            q = ",".join(["?"] * len(chunk))
+            exists = cur.execute(
+                f"SELECT COUNT(*) FROM songs WHERE code IN ({q})",
+                chunk
+            ).fetchone()[0]
+            novos += (len(chunk) - exists)
+
+        # UPSERT real
         cur.executemany(
-            """INSERT INTO songs
-            (code,title,singer,snippet,package,type,duplicated,title_norm,singer_norm,snippet_norm)
-            VALUES (?,?,?,?,?,?,?,?,?,?)""",
+            """
+            INSERT INTO songs
+              (code,title,singer,snippet,package,type,duplicated,title_norm,singer_norm,snippet_norm)
+            VALUES (?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(code) DO UPDATE SET
+              title=excluded.title,
+              singer=excluded.singer,
+              snippet=excluded.snippet,
+              package=excluded.package,
+              type=excluded.type,
+              duplicated=excluded.duplicated,
+              title_norm=excluded.title_norm,
+              singer_norm=excluded.singer_norm,
+              snippet_norm=excluded.snippet_norm
+            """,
             rows
         )
-
         con.commit()
-        return cur.rowcount
+
+        atualizados = total - novos
+        return {"total": total, "novos": novos, "atualizados": atualizados}
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("excel_path", help="Caminho do banco.xlsx")
-    ap.add_argument("--no-replace", action="store_true", help="Não apagar antes de importar (apenas adiciona)")
+    ap.add_argument("--no-replace", action="store_true",
+                    help="Não apagar antes de importar (incremental: insere/atualiza)")
     args = ap.parse_args()
 
     df = load_excel(args.excel_path)
-    inserted = upsert(df, replace=not args.no_replace)
-    print(f"Importação concluída. Linhas inseridas: {inserted}")
+    result = upsert(df, replace=not args.no_replace)
+
+    print(
+        "Importação concluída. "
+        f"Total processado: {result['total']} | "
+        f"Novos: {result['novos']} | "
+        f"Atualizados: {result['atualizados']}"
+    )
 
 
 if __name__ == "__main__":
     main()
-
