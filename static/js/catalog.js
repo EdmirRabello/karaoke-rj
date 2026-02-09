@@ -333,6 +333,38 @@ async function loadFavorites() {
     panelTitle && (panelTitle.textContent = "Meus Favoritos");
     setStatus("", "");
 
+    const localCodes = getFavs();
+    const localCodesNum = localCodes.map((c) => Number(c)).filter((n) => Number.isFinite(n) && n > 0);
+
+    // 1) MOSTRA LOCAL PRIMEIRO (não depende do servidor)
+    if (localCodesNum.length) {
+        try {
+            const resLocal = await fetch("/api/songs/by-codes", {
+                method: "POST",
+                headers: {"Content-Type": "application/json", "Accept": "application/json"},
+                cache: "no-store",
+                body: JSON.stringify({codes: localCodesNum}),
+            });
+            if (resLocal.ok) {
+                const dataLocal = await resLocal.json();
+                const itemsLocal = dataLocal.items || [];
+                setCount(itemsLocal.length);
+                renderRows(itemsLocal);
+            } else {
+                // fallback: só mostra contagem e deixa lista vazia
+                setCount(localCodesNum.length);
+            }
+        } catch (e) {
+            console.warn("Falha ao carregar detalhes locais:", e);
+            setCount(localCodesNum.length);
+        }
+        updateFavCount();
+    } else {
+        setCount(0);
+        renderRows([]);
+    }
+
+    // 2) TENTA SERVIDOR (best-effort). SE VIER VAZIO, NÃO APAGA O LOCAL.
     try {
         const res = await fetch(
             `/api/fav/user?user_id=${encodeURIComponent(USER_ID)}&limit=500`,
@@ -340,26 +372,43 @@ async function loadFavorites() {
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+        const serverItems = data.items || [];
+        const serverCodes = serverItems.map((it) => String(it.code)).filter(Boolean);
 
-        const items = data.items || [];
-
-        // sincroniza localStorage com o servidor desse usuário
-        try {
-            const serverCodes = items.map((it) => String(it.code)).filter(Boolean);
+        if (serverCodes.length) {
+            // servidor tem dados -> assume e sincroniza local
             setFavs(serverCodes);
-        } catch {
+            updateFavCount();
+
+            setCount(serverItems.length);
+            renderRows(serverItems);
+            setStatus("", "");
+            return;
         }
-        updateFavCount();
 
-        setCount(items.length);
-        renderRows(items);
-
-        if (!items.length) setStatus("info", "Você ainda não favoritou nenhuma música.");
+        // servidor vazio:
+        if (localCodesNum.length) {
+            // restaura servidor a partir do local (caso Render tenha resetado o DB)
+            try {
+                await fetch("/api/fav/sync", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({user_id: USER_ID, codes: localCodesNum, mode: "merge"}),
+                });
+            } catch (e) {
+                console.warn("Falha ao restaurar favoritos no servidor:", e);
+            }
+            setStatus("info", "Favoritos locais carregados (servidor sem dados no momento).");
+        } else {
+            setStatus("info", "Você ainda não favoritou nenhuma música.");
+        }
     } catch (e) {
-        console.error(e);
-        setCount(0);
-        renderRows([]);
-        setStatus("error", "Erro ao carregar favoritos.");
+        console.warn("Servidor indisponível para favoritos:", e);
+        if (localCodesNum.length) {
+            setStatus("info", "Favoritos locais carregados (sem conexão com o servidor).");
+        } else {
+            setStatus("error", "Erro ao carregar favoritos.");
+        }
     }
 }
 

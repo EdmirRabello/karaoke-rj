@@ -76,33 +76,83 @@ def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
     replace=False (padrão): UPSERT por code (insere novos e atualiza existentes)
     replace=True: apaga songs e recria tudo do zero (evite em produção)
     Retorna contagens reais: novos, atualizados, total.
+
+    Compatível com:
+      - SQLite (dev / Windows)
+      - Postgres (produção no Render) quando DATABASE_URL estiver setado
     """
+    from db import init_db, get_conn, DB_KIND
     init_db()
+
+    cols = [
+        "code", "title", "singer", "snippet",
+        "package", "type", "duplicated",
+        "title_norm", "singer_norm", "snippet_norm"
+    ]
+
+    rows = []
+    for r in df[cols].itertuples(index=False):
+        rows.append((
+            int(r.code),
+            str(r.title),
+            str(r.singer),
+            str(r.snippet) if r.snippet is not None else "",
+            str(r.package),
+            str(r.type),
+            int(r.duplicated),
+            str(r.title_norm),
+            str(r.singer_norm),
+            str(r.snippet_norm) if r.snippet_norm is not None else ""
+        ))
+
+    total = len(rows)
+    if total == 0:
+        return {"total": 0, "novos": 0, "atualizados": 0}
+
+    if DB_KIND == "postgres":
+        # Postgres: usa ON CONFLICT (code) DO UPDATE
+        import psycopg2.extras  # type: ignore
+
+        with get_conn() as con:
+            with con.cursor() as cur:
+                if replace:
+                    cur.execute("DELETE FROM songs;")
+                    con.commit()
+
+                # contar existentes
+                codes = [r[0] for r in rows]
+                cur.execute("SELECT COUNT(*) FROM songs WHERE code = ANY(%s)", (codes,))
+                exists = cur.fetchone()[0]
+                novos = max(total - int(exists), 0)
+
+                psycopg2.extras.execute_values(
+                    cur,
+                    """
+                    INSERT INTO songs
+                      (code,title,singer,snippet,package,type,duplicated,title_norm,singer_norm,snippet_norm)
+                    VALUES %s
+                    ON CONFLICT (code) DO UPDATE SET
+                      title = EXCLUDED.title,
+                      singer = EXCLUDED.singer,
+                      snippet = EXCLUDED.snippet,
+                      package = EXCLUDED.package,
+                      type = EXCLUDED.type,
+                      duplicated = EXCLUDED.duplicated,
+                      title_norm = EXCLUDED.title_norm,
+                      singer_norm = EXCLUDED.singer_norm,
+                      snippet_norm = EXCLUDED.snippet_norm
+                    """,
+                    rows,
+                    page_size=1000
+                )
+                con.commit()
+
+                # atualizados = total - novos (aprox. suficiente para relatório)
+                return {"total": total, "novos": novos, "atualizados": max(total - novos, 0)}
+
+    # SQLite (original)
     with get_conn() as con:
         cur = con.cursor()
-
-        cols = [
-            "code", "title", "singer", "snippet",
-            "package", "type", "duplicated",
-            "title_norm", "singer_norm", "snippet_norm"
-        ]
-
-        rows = []
-        for r in df[cols].itertuples(index=False):
-            rows.append((
-                int(r.code),
-                str(r.title),
-                str(r.singer),
-                str(r.snippet) if r.snippet is not None else "",
-                str(r.package),
-                str(r.type),
-                int(r.duplicated),
-                str(r.title_norm),
-                str(r.singer_norm),
-                str(r.snippet_norm) if r.snippet_norm is not None else ""
-            ))
-
-        total = len(rows)
 
         if replace:
             cur.execute("DELETE FROM songs;")
@@ -129,9 +179,8 @@ def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
                 f"SELECT COUNT(*) FROM songs WHERE code IN ({q})",
                 chunk
             ).fetchone()[0]
-            novos += (len(chunk) - exists)
+            novos += max(len(chunk) - int(exists), 0)
 
-        # UPSERT real
         cur.executemany(
             """
             INSERT INTO songs
@@ -152,26 +201,18 @@ def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
         )
         con.commit()
 
-        atualizados = total - novos
-        return {"total": total, "novos": novos, "atualizados": atualizados}
+        return {"total": total, "novos": novos, "atualizados": max(total - novos, 0)}
 
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("excel_path", help="Caminho do banco.xlsx")
-    ap.add_argument("--no-replace", action="store_true",
-                    help="Não apagar antes de importar (incremental: insere/atualiza)")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("excel", nargs="?", default="banco.xlsx")
+    parser.add_argument("--replace", action="store_true")
+    args = parser.parse_args()
 
-    df = load_excel(args.excel_path)
-    result = upsert(df, replace=not args.no_replace)
-
-    print(
-        "Importação concluída. "
-        f"Total processado: {result['total']} | "
-        f"Novos: {result['novos']} | "
-        f"Atualizados: {result['atualizados']}"
-    )
+    df = load_excel(args.excel)
+    result = upsert(df, replace=args.replace)
+    print(result)
 
 
 if __name__ == "__main__":
