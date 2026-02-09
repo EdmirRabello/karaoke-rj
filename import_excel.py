@@ -17,7 +17,7 @@ COLUMN_MAP = {
 }
 
 ALLOWED_PACKAGES = {"BASICO", "PLUS"}
-ALLOWED_TYPES = {"NAC", "INT", "GOSPEL"}  # inclui GOSPEL
+ALLOWED_TYPES = {"NAC", "INT", "GOSPEL"}
 
 
 def norm(s: str | None) -> str:
@@ -41,8 +41,10 @@ def load_excel(path: str) -> pd.DataFrame:
             f"Colunas encontradas: {list(df.columns)}"
         )
 
-    # code
-    df["code"] = pd.to_numeric(df["code"], errors="coerce").astype("Int64")
+    # ---------------------------------------------------------
+    # CODE COMO INTEGER (compatível com db.py atual)
+    # ---------------------------------------------------------
+    df["code"] = pd.to_numeric(df["code"], errors="coerce")
     df = df.dropna(subset=["code", "title", "singer"])
     df["code"] = df["code"].astype(int)
 
@@ -58,7 +60,7 @@ def load_excel(path: str) -> pd.DataFrame:
     df["type"] = df["type"].str.upper()
     df.loc[~df["type"].isin(ALLOWED_TYPES), "type"] = ""
 
-    # duplicated: tenta tratar 0/1 corretamente
+    # duplicated: trata 0/1 corretamente
     dup_num = pd.to_numeric(df["duplicated"], errors="coerce")
     df["duplicated"] = dup_num.fillna(0).astype(int)
     df["duplicated"] = (df["duplicated"] != 0).astype(int)
@@ -68,20 +70,24 @@ def load_excel(path: str) -> pd.DataFrame:
     df["singer_norm"] = df["singer"].apply(norm)
     df["snippet_norm"] = df["snippet"].apply(norm)
 
+    # ---------------------------------------------------------
+    # DEDUPLICAÇÃO NO FORMATO QUE O BANCO ENXERGA
+    # ---------------------------------------------------------
+    dups = df.duplicated(subset=["code"], keep=False).sum()
+    print(f"[import] duplicados por code após cast int: {dups}")
+    if dups:
+        print("[import] removendo duplicados (mantendo último registro por code)")
+        df = df.drop_duplicates(subset=["code"], keep="last")
+
     return df
 
 
 def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
     """
-    replace=False (padrão): UPSERT por code (insere novos e atualiza existentes)
+    replace=False: UPSERT por code (insere novos e atualiza existentes)
     replace=True: apaga songs e recria tudo do zero (evite em produção)
-    Retorna contagens reais: novos, atualizados, total.
-
-    Compatível com:
-      - SQLite (dev / Windows)
-      - Postgres (produção no Render) quando DATABASE_URL estiver setado
     """
-    from db import init_db, get_conn, DB_KIND
+    from db import DB_KIND
     init_db()
 
     cols = [
@@ -90,27 +96,30 @@ def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
         "title_norm", "singer_norm", "snippet_norm"
     ]
 
+    # Montagem do lote
     rows = []
     for r in df[cols].itertuples(index=False):
         rows.append((
-            int(r.code),
+            int(r.code),                     # INTEGER
             str(r.title),
             str(r.singer),
-            str(r.snippet) if r.snippet is not None else "",
+            str(r.snippet) if r.snippet else "",
             str(r.package),
             str(r.type),
             int(r.duplicated),
             str(r.title_norm),
             str(r.singer_norm),
-            str(r.snippet_norm) if r.snippet_norm is not None else ""
+            str(r.snippet_norm) if r.snippet_norm else ""
         ))
 
     total = len(rows)
     if total == 0:
         return {"total": 0, "novos": 0, "atualizados": 0}
 
+    # ---------------------------------------------------------
+    # POSTGRES
+    # ---------------------------------------------------------
     if DB_KIND == "postgres":
-        # Postgres: usa ON CONFLICT (code) DO UPDATE
         import psycopg2.extras  # type: ignore
 
         with get_conn() as con:
@@ -119,12 +128,13 @@ def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
                     cur.execute("DELETE FROM songs;")
                     con.commit()
 
-                # contar existentes
+                # contagem aproximada
                 codes = [r[0] for r in rows]
                 cur.execute("SELECT COUNT(*) FROM songs WHERE code = ANY(%s)", (codes,))
-                exists = cur.fetchone()[0]
-                novos = max(total - int(exists), 0)
+                exists = int(cur.fetchone()[0] or 0)
+                novos = max(total - exists, 0)
 
+                # UPSERT em lote
                 psycopg2.extras.execute_values(
                     cur,
                     """
@@ -147,10 +157,15 @@ def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
                 )
                 con.commit()
 
-                # atualizados = total - novos (aprox. suficiente para relatório)
-                return {"total": total, "novos": novos, "atualizados": max(total - novos, 0)}
+                return {
+                    "total": total,
+                    "novos": novos,
+                    "atualizados": max(total - novos, 0)
+                }
 
-    # SQLite (original)
+    # ---------------------------------------------------------
+    # SQLITE (DEV)
+    # ---------------------------------------------------------
     with get_conn() as con:
         cur = con.cursor()
 
@@ -167,10 +182,9 @@ def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
             con.commit()
             return {"total": total, "novos": total, "atualizados": 0}
 
-        # contar novos vs existentes antes
         codes = [r[0] for r in rows]
         novos = 0
-        batch = 900  # evita limite de parâmetros
+        batch = 900
 
         for i in range(0, len(codes), batch):
             chunk = codes[i:i + batch]
@@ -201,7 +215,11 @@ def upsert(df: pd.DataFrame, replace: bool = False) -> dict:
         )
         con.commit()
 
-        return {"total": total, "novos": novos, "atualizados": max(total - novos, 0)}
+        return {
+            "total": total,
+            "novos": novos,
+            "atualizados": max(total - novos, 0)
+        }
 
 
 def main():
