@@ -14,12 +14,16 @@ venv/
 .idea/
 .vscode/
 
-# Build / cache
+# ignorar qualquer db POR PADRÃO
+*.sqlite
 *.sqlite3
-*.db-journal
 
-# App data (decida se quer versionar o banco)
-data/karaoke.db
+# 👉 MAS PERMITIR O BANCO REAL DO PROJETO
+!data/karaoke.db
 
-# Backups locais
+# arquivos temporários do SQLite
+data/*.db-wal
+data/*.db-shm
+
+# backups
 _backup_original/
