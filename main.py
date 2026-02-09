@@ -111,40 +111,44 @@ def get_conn() -> sqlite3.Connection:
 
 @app.on_event("startup")
 def on_startup():
+    # 1) garante schema (cria tabelas se não existirem)
+    init_db()
+
+    # 2) garante tabela favorites (se não existir ainda em alguma versão antiga)
     with get_conn() as con:
-
-        # SONGS
-        con.execute("""
-        CREATE TABLE IF NOT EXISTS songs (
-            code INTEGER PRIMARY KEY,
-            title TEXT,
-            singer TEXT,
-            snippet TEXT,
-            package TEXT,
-            type TEXT,
-            duplicated INTEGER DEFAULT 0,
-            title_norm TEXT,
-            singer_norm TEXT,
-            snippet_norm TEXT
-        )
-        """)
-
-        # FAVORITES
         con.execute("""
         CREATE TABLE IF NOT EXISTS favorites (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
-            code INTEGER NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(user_id, code)
+            code    INTEGER NOT NULL,
+            created_at TEXT DEFAULT (datetime('now')),
+            PRIMARY KEY (user_id, code)
         )
         """)
+        con.commit()
 
-        # INDEXES
+    # 3) auto-import do Excel (fonte oficial) — NÃO apaga; faz UPSERT
+    try:
+        from import_excel import load_excel, upsert
+
+        excel = Path(__file__).resolve().parent / "banco.xlsx"
+        if excel.exists():
+            df = load_excel(str(excel))
+            result = upsert(df, replace=False)  # incremental
+            print(
+                f"✅ Auto-import OK: total={result['total']} "
+                f"novos={result['novos']} atualizados={result['atualizados']}"
+            )
+        else:
+            print("⚠️ banco.xlsx não encontrado (auto-import ignorado).")
+    except Exception as e:
+        print("❌ Erro no auto-import do Excel:", e)
+
+    # 4) índices (se a tabela existir, cria; se já existir, ignora)
+    with get_conn() as con:
         con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id, code)")
         con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_code ON favorites(code)")
-
         con.commit()
+
 
 
 # ============================================================
