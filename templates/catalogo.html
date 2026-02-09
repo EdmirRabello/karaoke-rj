@@ -3,7 +3,7 @@
 {% set page_description = "Busque no catálogo do Karaokê RJ: código, música, artista e filtros por tipo e plano." %}
 
 {% block page_css %}
-    <link rel="stylesheet" href="{{ request.url_for('static', path='css/catalog.css') }}">
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/catalog.css') }}?v={{ ASSET_V }}">
 {% endblock %}
 
 {% block content %}
@@ -18,9 +18,9 @@
         <div class="k-container k-header__inner">
 
             <a class="k-brand" href="/">
-                <img src="{{ request.url_for('static', path='img/cantus_logo.png') }}"
-                     alt="Logo Karaokê RJ"
-                     loading="lazy" decoding="async">
+              <img src="{{ request.url_for('static', path='img/cantus_logo.png') }}?v={{ ASSET_V }}"
+                alt="Logo Karaokê RJ"
+                loading="lazy" decoding="async">
                 <div class="k-brand__name">
                     <b>Catálogo</b>
                     <span>Busca rápida + favoritos</span>
@@ -163,7 +163,7 @@
         </div>
     </div>
 
-    <script src="{{ request.url_for('static', path='js/theme.js') }}" defer></script>
-    <script src="{{ request.url_for('static', path='js/catalog.js') }}" defer></script>
+    <script src="{{ request.url_for('static', path='js/catalog.js') }}?v={{ ASSET_V }}" defer></script>
+
 
 {% endblock %}

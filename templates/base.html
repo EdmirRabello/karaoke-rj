@@ -1,5 +1,8 @@
+{% import "_helpers.html" as h with context %}
 {% set page_title = page_title if page_title is defined else "Karaokê RJ" %}
 {% set page_description = page_description if page_description is defined else "" %}
+{# helper para gerar URL versionada de arquivos estáticos #}
+
 <!doctype html>
 <html lang="pt-br">
 <head>
@@ -15,32 +18,29 @@
     <meta name="theme-color" content="#05060a"/>
     <meta name="color-scheme" content="light dark"/>
 
-    <link rel="manifest" href="{{ request.url_for('static', path='manifest.json') }}">
-    <link rel="icon" href="{{ request.url_for('static', path='img/minha-logo.png') }}">
-    <link rel="apple-touch-icon" href="{{ request.url_for('static', path='img/minha-logo.png') }}">
+    <script>
+        window.APP_VERSION = "{{ ASSET_V }}";
+    </script>
 
-    <!-- Ícones -->
+    <link rel="manifest" href="{{ request.url_for('static', path='manifest.json') }}?v={{ ASSET_V }}">
+    <link rel="icon" href="{{ request.url_for('static', path='img/minha-logo.png') }}?v={{ ASSET_V }}">
+    <link rel="apple-touch-icon" href="{{ request.url_for('static', path='img/minha-logo.png') }}?v={{ ASSET_V }}">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <!-- CSS base -->
-    <link rel="stylesheet" href="{{ request.url_for('static', path='css/base.css') }}">
+    <link rel="stylesheet" href="{{ request.url_for('static', path='css/base.css') }}?v={{ ASSET_V }}">
 
     {% block page_css %}{% endblock %}
     {% block head_extra %}{% endblock %}
 
-    <!-- Tema -->
-    <script src="{{ request.url_for('static', path='js/theme.js') }}" defer></script>
-
-    <!-- Seu arquivo original (mantido) -->
-    <script src="{{ request.url_for('static', path='js/image-viewer.js') }}" defer></script>
+    <script src="{{ request.url_for('static', path='js/theme.js') }}?v={{ ASSET_V }}" defer></script>
+    <script src="{{ request.url_for('static', path='js/image-viewer.js') }}?v={{ ASSET_V }}" defer></script>
 </head>
 
 <body>
 {% block content %}{% endblock %}
-
 {% block page_scripts %}{% endblock %}
 
-<!-- IMAGE VIEWER -->
 <div class="img-viewer" id="imgViewer"
      aria-hidden="true" role="dialog" aria-modal="true" aria-label="Visualizador de imagem">
     <button class="img-viewer__close" id="imgViewerClose" type="button" aria-label="Fechar">
@@ -50,7 +50,6 @@
          alt="Imagem ampliada" loading="eager" decoding="async">
 </div>
 
-<!-- ✅ FALLBACK GARANTIDO (não mexe no seu script; só garante que o click funcione) -->
 <script>
     (function () {
         if (window.__krj_imgviewer_bound) return;
@@ -141,48 +140,48 @@
     })();
 </script>
 
-<!-- ✅ PWA: registra Service Worker UMA ÚNICA VEZ (com update seguro) -->
+<!-- ✅ Service Worker sem loop -->
+<script>
+    (function () {
+        if (!("serviceWorker" in navigator)) return;
 
-  <!-- 🔥 AQUI: SCRIPT DO SERVICE WORKER SEMPRE NO FINAL DO BODY -->
-  <script>
-  (function () {
-    if (!("serviceWorker" in navigator)) return;
-
-    window.addEventListener("load", async () => {
-      try {
-        const reg = await navigator.serviceWorker.register("/sw.js");
+        const hadController = !!navigator.serviceWorker.controller;
 
         function refreshOnce() {
-          if (window.__sw_reloaded) return;
-          window.__sw_reloaded = true;
-          window.location.reload();
+            if (window.__sw_reloaded) return;
+            window.__sw_reloaded = true;
+            window.location.reload();
         }
 
-        if (reg.waiting) {
-          reg.waiting.postMessage({ type: "SKIP_WAITING" });
-        }
+        window.addEventListener("load", async () => {
+            try {
+                const reg = await navigator.serviceWorker.register("/sw.js");
 
-        reg.addEventListener("updatefound", () => {
-          const sw = reg.installing;
-          if (!sw) return;
+                if (reg.waiting) {
+                    reg.waiting.postMessage({type: "SKIP_WAITING"});
+                }
 
-          sw.addEventListener("statechange", () => {
-            if (sw.state === "installed" && reg.waiting) {
-              reg.waiting.postMessage({ type: "SKIP_WAITING" });
+                reg.addEventListener("updatefound", () => {
+                    const sw = reg.installing;
+                    if (!sw) return;
+
+                    sw.addEventListener("statechange", () => {
+                        if (sw.state === "installed" && reg.waiting) {
+                            reg.waiting.postMessage({type: "SKIP_WAITING"});
+                        }
+                    });
+                });
+
+                navigator.serviceWorker.addEventListener("controllerchange", () => {
+                    if (hadController) refreshOnce();
+                });
+
+            } catch (e) {
+                console.log("SW register falhou:", e);
             }
-          });
         });
-
-        navigator.serviceWorker.addEventListener("controllerchange", refreshOnce);
-
-      } catch (e) {
-        console.log("SW register falhou:", e);
-      }
-    });
-  })();
-  </script>
+    })();
+</script>
 
 </body>
 </html>
-
-
