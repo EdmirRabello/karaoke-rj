@@ -118,69 +118,36 @@ def normalize_plano(plano: Optional[str]) -> Optional[str]:
 # ============================================================
 @app.on_event("startup")
 def on_startup():
-    # 1) garante as tabelas
     init_db()
 
-    # 2) garante índices (só depois das tabelas existirem)
+    # índices (não derruba se favorites ainda não existir)
     with get_conn() as con:
-        # se a tabela favorites não existir ainda (db novo), não derruba o app
         try:
             con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id, code)")
             con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_code ON favorites(code)")
+            con.commit()
         except Exception as e:
-            # evita quebrar startup em banco zerado/novo
-            print("WARN: não criou índices de favorites ainda:", e)
+            print("WARN favorites idx:", e)
 
-        con.commit()
-
-    # 3) se songs estiver vazia, importa do Excel automaticamente
+    # se songs estiver vazia, importa banco.xlsx
     excel_path = os.getenv("EXCEL_PATH", "banco.xlsx")
-    auto_import = os.getenv("AUTO_IMPORT_EXCEL", "1") == "1"
-
-    if not auto_import:
-        print("AUTO_IMPORT_EXCEL=0 -> pulando import automático")
-        return
 
     try:
         with get_conn() as con:
-            # existe tabela songs?
-            has_songs = con.execute(
-                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='songs' LIMIT 1"
-            ).fetchone() is not None
-
-            if not has_songs:
-                print("Tabela songs não existe ainda; init_db deve criar. Reinicializando.")
-                init_db()
-
             count = con.execute("SELECT COUNT(*) FROM songs").fetchone()[0]
     except Exception as e:
-        print("WARN: falha checando songs:", e)
+        print("WARN count songs:", e)
         count = 0
 
     if count == 0:
-        try:
-            print(f"Banco vazio (songs=0). Importando do Excel: {excel_path}")
-
-            # importa só quando precisa (pandas/unidecode)
-            from import_excel import load_excel, upsert
-
-            df = load_excel(excel_path)
-
-            # IMPORTANTE:
-            # replace=False = UPSERT (não apaga tudo), ideal pra updates
-            # replace=True  = recria do zero (evite)
-            replace = os.getenv("IMPORT_REPLACE", "0") == "1"
-
-            result = upsert(df, replace=replace)
-
-            print(
-                "Importação OK:",
-                f"Total {result['total']} | Novos {result['novos']} | Atualizados {result['atualizados']}"
-            )
-        except Exception as e:
-            print("ERRO: import automático falhou:", e)
+        print("songs=0 -> importando", excel_path)
+        from import_excel import load_excel, upsert
+        df = load_excel(excel_path)
+        result = upsert(df, replace=False)  # incremental / UPSERT
+        print("IMPORT OK:", result)
     else:
-        print(f"Banco OK: songs={count} (não precisa importar)")
+        print("songs OK:", count)
+
 
 
 
