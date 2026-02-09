@@ -118,23 +118,70 @@ def normalize_plano(plano: Optional[str]) -> Optional[str]:
 # ============================================================
 @app.on_event("startup")
 def on_startup():
+    # 1) garante as tabelas
     init_db()
 
-    # ✅ garante tabela favorites existir (evita: no such table favorites)
+    # 2) garante índices (só depois das tabelas existirem)
     with get_conn() as con:
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS favorites (
-                user_id INTEGER NOT NULL,
-                code INTEGER NOT NULL,
-                created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (user_id, code)
-            )
-        """)
+        # se a tabela favorites não existir ainda (db novo), não derruba o app
+        try:
+            con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id, code)")
+            con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_code ON favorites(code)")
+        except Exception as e:
+            # evita quebrar startup em banco zerado/novo
+            print("WARN: não criou índices de favorites ainda:", e)
 
-        # Índices (se já existirem, não recria)
-        con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id, code)")
-        con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_code ON favorites(code)")
         con.commit()
+
+    # 3) se songs estiver vazia, importa do Excel automaticamente
+    excel_path = os.getenv("EXCEL_PATH", "banco.xlsx")
+    auto_import = os.getenv("AUTO_IMPORT_EXCEL", "1") == "1"
+
+    if not auto_import:
+        print("AUTO_IMPORT_EXCEL=0 -> pulando import automático")
+        return
+
+    try:
+        with get_conn() as con:
+            # existe tabela songs?
+            has_songs = con.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='songs' LIMIT 1"
+            ).fetchone() is not None
+
+            if not has_songs:
+                print("Tabela songs não existe ainda; init_db deve criar. Reinicializando.")
+                init_db()
+
+            count = con.execute("SELECT COUNT(*) FROM songs").fetchone()[0]
+    except Exception as e:
+        print("WARN: falha checando songs:", e)
+        count = 0
+
+    if count == 0:
+        try:
+            print(f"Banco vazio (songs=0). Importando do Excel: {excel_path}")
+
+            # importa só quando precisa (pandas/unidecode)
+            from import_excel import load_excel, upsert
+
+            df = load_excel(excel_path)
+
+            # IMPORTANTE:
+            # replace=False = UPSERT (não apaga tudo), ideal pra updates
+            # replace=True  = recria do zero (evite)
+            replace = os.getenv("IMPORT_REPLACE", "0") == "1"
+
+            result = upsert(df, replace=replace)
+
+            print(
+                "Importação OK:",
+                f"Total {result['total']} | Novos {result['novos']} | Atualizados {result['atualizados']}"
+            )
+        except Exception as e:
+            print("ERRO: import automático falhou:", e)
+    else:
+        print(f"Banco OK: songs={count} (não precisa importar)")
+
 
 
 # ============================================================
