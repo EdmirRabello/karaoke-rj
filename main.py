@@ -111,11 +111,10 @@ def get_conn() -> sqlite3.Connection:
 
 @app.on_event("startup")
 def on_startup():
-    # 1) garante schema (cria tabelas se não existirem)
     init_db()
 
-    # 2) garante tabela favorites (se não existir ainda em alguma versão antiga)
     with get_conn() as con:
+        # garante favorites
         con.execute("""
         CREATE TABLE IF NOT EXISTS favorites (
             user_id INTEGER NOT NULL,
@@ -124,30 +123,12 @@ def on_startup():
             PRIMARY KEY (user_id, code)
         )
         """)
-        con.commit()
 
-    # 3) auto-import do Excel (fonte oficial) — NÃO apaga; faz UPSERT
-    try:
-        from import_excel import load_excel, upsert
-
-        excel = Path(__file__).resolve().parent / "banco.xlsx"
-        if excel.exists():
-            df = load_excel(str(excel))
-            result = upsert(df, replace=False)  # incremental
-            print(
-                f"✅ Auto-import OK: total={result['total']} "
-                f"novos={result['novos']} atualizados={result['atualizados']}"
-            )
-        else:
-            print("⚠️ banco.xlsx não encontrado (auto-import ignorado).")
-    except Exception as e:
-        print("❌ Erro no auto-import do Excel:", e)
-
-    # 4) índices (se a tabela existir, cria; se já existir, ignora)
-    with get_conn() as con:
+        # índices (agora é seguro)
         con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_user ON favorites(user_id, code)")
         con.execute("CREATE INDEX IF NOT EXISTS idx_favorites_code ON favorites(code)")
         con.commit()
+
 
 
 
