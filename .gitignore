@@ -1,14 +1,37 @@
-# Banco local (NUNCA deve ir pro Git)
-data/*.db
+# ==============================
+# AMBIENTE PYTHON (CRÍTICO)
+# ==============================
+.venv/
+venv/
+.env
 
-# Coisas do PyCharm
-.idea/
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 
-# Zips e backups
+# ==============================
+# BANCO LOCAL - NUNCA NO GIT
+# ==============================
+data/*.db
+data/*.db-wal
+data/*.db-shm
+data/**/*.db
+
+# ==============================
+# IDEs
+# ==============================
+.idea/
+.vscode/
+
+# ==============================
+# BACKUPS E LIXO
+# ==============================
 *.zip
+*_backup*
 _backup_original/
 
-# Logs
+# ==============================
+# LOGS
+# ==============================
 *.log
