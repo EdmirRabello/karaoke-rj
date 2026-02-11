@@ -146,11 +146,16 @@ def search(
     q: str = Query("", description="Busca por código, título, cantor ou trecho"),
     tipo: Optional[str] = Query(None, description="NAC / INT / GOSPEL"),
     plano: Optional[str] = Query(None, description="PLUS / BASICO"),
-    limit: int = Query(200, ge=1, le=1000),
+    letter: Optional[str] = Query(None, description="Filtra cantor por inicial (A-Z)"),
+    limit: int = Query(60, ge=1, le=1000),
+    offset: int = Query(0, ge=0, le=2_000_000),
 ):
     q = (q or "").strip()
     tipo = normalize_tipo(tipo)
     plano = normalize_plano(plano)
+    letter = (letter or "").strip()[:1].upper() if letter else None
+    if letter and not ("A" <= letter <= "Z"):
+        letter = None
 
     code_int = None
     if q.isdigit():
@@ -170,10 +175,14 @@ def search(
         where.append("package = ?")
         params.append("BASICO")
 
+    if letter:
+        # usa colunas normalizadas (sem acento / lower)
+        where.append("singer_norm LIKE ?")
+        params.append(f"{letter.lower()}%")
+
     if q:
         q_low = q.lower()
         if DB_KIND == "postgres":
-            # Postgres: use ILIKE para colunas "originais" (case-insensitive)
             if code_int is not None:
                 where.append(
                     "(code = ? OR title ILIKE ? OR singer ILIKE ? OR snippet ILIKE ? "
@@ -225,21 +234,33 @@ def search(
         else "ORDER BY singer COLLATE NOCASE ASC, title COLLATE NOCASE ASC, code ASC"
     )
 
+    # total
+    total_sql = f"SELECT COUNT(1) as c FROM songs {where_sql}"
+    total_val = fetchone_value(total_sql, params)
+    total = int(total_val or 0)
+
+    # page
     sql = f"""
     SELECT code, title, singer, snippet, package, type, duplicated
     FROM songs
     {where_sql}
     {order_sql}
     LIMIT ?
+    OFFSET ?
     """
-    params.append(limit)
-
-    rows = fetchall(sql, params)
+    page_params = list(params) + [limit, offset]
+    rows = fetchall(sql, page_params)
 
     for d in rows:
         d["availability"] = availability_from_package(d.get("package", ""))
 
-    return {"q": q, "tipo": tipo, "plano": plano, "count": len(rows), "items": rows}
+    has_more = (offset + len(rows)) < total
+    return {
+        "q": q, "tipo": tipo, "plano": plano, "letter": letter,
+        "count": len(rows), "total": total,
+        "limit": limit, "offset": offset, "has_more": has_more,
+        "items": rows
+    }
 
 # ============================================================
 # AUX: buscar músicas por códigos (para offline/localStorage)

@@ -8,92 +8,130 @@
 
 {% block content %}
 
-    <!-- =========================================================
-         CATÁLOGO (catalogo.html)
-         - Header sticky vem do base.css
-         - No mobile: filtro fica no topo e o resultado fica colado nele
-         - O HERO abaixo é exibido no desktop e ocultado no mobile (catalog.css)
-         ========================================================= -->
+    <!-- HEADER (mantém seu header sticky do base.css) -->
     <header class="k-header">
         <div class="k-container k-header__inner">
 
             <a class="k-brand" href="/">
-              <img src="{{ request.url_for('static', path='img/cantus_logo.png') }}?v={{ ASSET_V }}"
-                alt="Logo Karaokê RJ"
-                loading="lazy" decoding="async">
+                <img src="{{ request.url_for('static', path='img/cantus_logo.png') }}?v={{ ASSET_V }}"
+                     alt="Logo Karaokê RJ"
+                     loading="lazy" decoding="async">
                 <div class="k-brand__name">
                     <b>Catálogo</b>
                     <span>Busca rápida + favoritos</span>
                 </div>
             </a>
 
-            <nav class="k-nav" aria-label="Navegação">
-                <a href="/">Home</a>
-                <a class="active" href="/catalogo">Catálogo</a>
-            </nav>
-
-            <!-- AÇÕES NO TOPO (WhatsApp + Favoritos + Top) -->
             <div class="k-actions k-actions--icons" aria-label="Ações">
 
-                <!-- Favoritos do usuário -->
-                <button class="k-btn k-btn--primary k-btn--icon"
-                        id="btnFavUser"
-                        type="button"
-                        aria-label="Meus Favoritos"
-                        title="Meus Favoritos">
-                    <i class="bi bi-star-fill"></i>
-                    <span class="fav-badge" aria-hidden="true"></span>
+                <!-- DESKTOP: botões no topo (canto direito) -->
+                <div class="deskbar" aria-label="Atalhos do catálogo">
+                    <a class="deskbar__item" href="/" aria-label="Início">
+                        <i class="bi bi-house-door-fill"></i><span>Início</span>
+                    </a>
+
+                    <a class="deskbar__item" href="/catalogo" aria-label="Catálogo" id="btnCatalogDesk">
+                        <i class="bi bi-music-note-list"></i><span>Catálogo</span>
+                    </a>
+
+                    <button class="deskbar__item" id="btnFavUserDesk" type="button" aria-label="Favoritos">
+            <span class="icon-wrap" aria-hidden="true">
+                <i class="bi bi-star-fill"></i>
+                <span class="badge" id="favBadgeDesk" aria-hidden="true"></span>
+            </span>
+                        <span>Favoritos</span>
+                    </button>
+
+                    <button class="deskbar__item" id="btnTopFavDesk" type="button" aria-label="Top 30">
+                        <i class="bi bi-fire"></i><span>Top 30</span>
+                    </button>
+
+                    <button class="deskbar__item_loja" id="btnPdf" type="button" aria-label="Baixar PDF">
+                        <i class="bi bi-file-pdf-fill"></i><span>Baixar PDF</span>
+                    </button>
+
+                    <a class="deskbar__item_loja" href="https://loja.infinitepay.io/karaokerj" aria-label="Loja">
+                        <i class="bi bi-cart-fill"></i><span>Loja Virtual</span>
+                    </a>
+                </div>
+
+                <!-- Instalar (continua igual) -->
+                <button class="k-btn k-btn--primary k-btn--install" id="btnInstall" type="button" hidden>
+                    <i class="bi bi-download"></i> Instalar
                 </button>
 
-
-                <!-- Top Favoritos (ranking global) -->
-                <button class="k-btn k-btn--primary k-btn--icon"
-                        id="btnTopFav"
-                        type="button"
-                        aria-label="Top Favoritos"
-                        title="Top Favoritos">
-                    <i class="bi bi-fire"></i>
+                <!-- Lupa (deixa no HTML; depois a gente esconde no DESKTOP via CSS) -->
+                <button class="k-btn k-btn--icon" id="btnSearchIcon" type="button" aria-label="Buscar">
+                    <i class="bi bi-search"></i>
                 </button>
-
-                <!-- Home, antigo whattsapp -->
-                <a class="k-btn k-btn--primary k-btn--icon k-btn--home"
-                   href="/"
-                   aria-label="Ir para Home"
-                   title="Home">
-                    <i class="bi bi-house-door-fill"></i>
-
-                </a>
-
 
             </div>
+
 
         </div>
     </header>
 
     <div class="k-container">
 
+        <!-- HERO (desktop mostra, mobile esconde via CSS) -->
         <section class="cat-hero">
             <h1>Catálogo de Músicas 🎶</h1>
             <p>Pesquise por <b>código</b>, <b>título</b> ou <b>cantor</b>.</p>
         </section>
 
+
+        <!-- =========================================================
+             LAYOUT PRINCIPAL
+             - Desktop: sidebar + panel
+             - Mobile: A–Z vertical + sidebar + panel (seu CSS já cuida)
+             ========================================================= -->
         <div class="cat-layout">
 
-            <!-- FILTROS (sidebar)
-                 - No mobile: fica no topo (fixo no layout)
-                 - Botão chevron recolhe/expande (JS: .filters-collapsed)
-                 - Padrão: ABERTO (Opção B)
+            <!-- A–Z (UM SÓ NO HTML)
+                 - Mobile: trilho vertical (como já está)
+                 - Desktop: você vai transformar em horizontal via CSS depois
             -->
-            <aside class="sidebar" id="sidebar" aria-label="Filtros e busca">
+            <div class="az-rail" id="azRail" aria-label="Índice alfabético">
+                <button type="button" class="az-btn" data-letter="#">#</button>
+                <button type="button" class="az-btn" data-letter="A">A</button>
+                <button type="button" class="az-btn" data-letter="B">B</button>
+                <button type="button" class="az-btn" data-letter="C">C</button>
+                <button type="button" class="az-btn" data-letter="D">D</button>
+                <button type="button" class="az-btn" data-letter="E">E</button>
+                <button type="button" class="az-btn" data-letter="F">F</button>
+                <button type="button" class="az-btn" data-letter="G">G</button>
+                <button type="button" class="az-btn" data-letter="H">H</button>
+                <button type="button" class="az-btn" data-letter="I">I</button>
+                <button type="button" class="az-btn" data-letter="J">J</button>
+                <button type="button" class="az-btn" data-letter="K">K</button>
+                <button type="button" class="az-btn" data-letter="L">L</button>
+                <button type="button" class="az-btn" data-letter="M">M</button>
+                <button type="button" class="az-btn" data-letter="N">N</button>
+                <button type="button" class="az-btn" data-letter="O">O</button>
+                <button type="button" class="az-btn" data-letter="P">P</button>
+                <button type="button" class="az-btn" data-letter="Q">Q</button>
+                <button type="button" class="az-btn" data-letter="R">R</button>
+                <button type="button" class="az-btn" data-letter="S">S</button>
+                <button type="button" class="az-btn" data-letter="T">T</button>
+                <button type="button" class="az-btn" data-letter="U">U</button>
+                <button type="button" class="az-btn" data-letter="V">V</button>
+                <button type="button" class="az-btn" data-letter="W">W</button>
+                <button type="button" class="az-btn" data-letter="X">X</button>
+                <button type="button" class="az-btn" data-letter="Y">Y</button>
+                <button type="button" class="az-btn" data-letter="Z">Z</button>
+            </div>
+
+            <!-- SIDEBAR (mantém igual) -->
+            <aside class="sidebar filters-collapsed" id="sidebar" aria-label="Filtros e busca">
                 <div class="sidebar__head">
                     <b>Buscar & Filtrar</b>
 
                     <button id="btnFiltersToggle" type="button"
                             class="k-btn k-btn--icon"
-                            aria-label="Abrir/fechar filtros"
-                            aria-expanded="true"
-                            title="Abrir/fechar filtros">
-                        <i id="filtersChevron" class="bi bi-chevron-up"></i>
+                            aria-label="Fechar filtros"
+                            aria-expanded="false"
+                            title="Fechar">
+                        <i id="filtersChevron" class="bi bi-x-lg"></i>
                     </button>
                 </div>
 
@@ -132,10 +170,7 @@
                 </div>
             </aside>
 
-            <!-- RESULTADOS (panel)
-                 - No mobile: fica colado no filtro (sem gap)
-                 - Somente a lista (#results) rola, para economizar espaço
-            -->
+            <!-- RESULTADOS -->
             <section class="panel">
                 <div class="panel__head">
                     <b id="panelTitle">Resultados</b>
@@ -143,7 +178,6 @@
                 </div>
 
                 <div class="panel__body">
-                    <!-- Status continua existindo, mas vamos esconder quando não precisar -->
                     <div class="status status-info" id="status"></div>
 
                     <div class="results-wrap">
@@ -152,10 +186,11 @@
                             <div>Título</div>
                             <div>Artista</div>
                             <div>Plano</div>
-                            <div></div>
+                            <div>Favoritos</div>
                         </div>
 
                         <div class="results" id="results"></div>
+                        <div class="sentinel" id="sentinel" aria-hidden="true"></div>
                     </div>
                 </div>
             </section>
@@ -163,7 +198,88 @@
         </div>
     </div>
 
+    <!-- APPBAR (MOBILE) — mantém igual -->
+    <nav class="appbar" aria-label="Navegação rápida (mobile)">
+
+        <a class="deskbar__item_loja" href="https://loja.infinitepay.io/karaokerj" aria-label="Loja">
+            <i class="bi bi-cart-fill"></i><span>Loja</span>
+        </a>
+
+        <a class="appbar__item" href="/catalogo" aria-label="Catálogo" id="btnCatalog">
+            <i class="bi bi-music-note-list"></i><span>Catálogo</span>
+        </a>
+
+        <button class="appbar__item" id="btnFavUser" type="button" aria-label="Favoritos">
+      <span class="icon-wrap" aria-hidden="true">
+        <i class="bi bi-star-fill"></i>
+        <span class="badge" id="favBadge" aria-hidden="true"></span>
+      </span>
+            <span>Favoritos</span>
+        </button>
+
+        <button class="appbar__item" id="btnTopFav" type="button" aria-label="Top 30">
+            <i class="bi bi-fire"></i><span>Top 30</span>
+        </button>
+
+        <button class="appbar__item" id="btnPdfDesk" type="button" aria-label="Baixar PDF">
+            <i class="bi bi-file-pdf-fill"></i><span>Baixar PDF</span>
+        </button>
+    </nav>
+
     <script src="{{ request.url_for('static', path='js/catalog.js') }}?v={{ ASSET_V }}" defer></script>
+
+    <!-- =========================================================
+         DESKTOP BUTTON WIRING (não mexe no seu catalog.js)
+         - Faz os botões do desktop chamarem os mesmos handlers
+         - E mantém o badge do desktop sincronizado com o do mobile
+         ========================================================= -->
+    <script>
+        (function () {
+            const dFav = document.getElementById("btnFavUserDesk");
+            const dTop = document.getElementById("btnTopFavDesk");
+            const badgeDesk = document.getElementById("favBadgeDesk");
+            const badgeMobile = document.getElementById("favBadge");
+
+            // dispara os clicks dos botões reais do JS (mobile) — reaproveita tudo
+            dFav && dFav.addEventListener("click", () => document.getElementById("btnFavUser")?.click());
+            dTop && dTop.addEventListener("click", () => document.getElementById("btnTopFav")?.click());
+
+            // espelha badge (quando o JS atualizar o mobile, o desktop acompanha)
+            // simples e robusto: observa mudanças no badge mobile
+            if (badgeDesk && badgeMobile && "MutationObserver" in window) {
+                const sync = () => {
+                    badgeDesk.textContent = badgeMobile.textContent || "";
+                    badgeDesk.style.display = getComputedStyle(badgeMobile).display;
+                };
+                sync();
+                const mo = new MutationObserver(sync);
+                mo.observe(badgeMobile, {childList: true, subtree: true, characterData: true, attributes: true});
+            }
+        })();
+    </script>
+    // POPUP PDF
+    <!-- MODAL: Download PDFs -->
+    <div id="pdfModal" class="pdf-modal" aria-hidden="true">
+        <div class="pdf-modal__overlay" data-pdf-close></div>
+
+        <div class="pdf-modal__panel" role="dialog" aria-modal="true" aria-labelledby="pdfModalTitle">
+            <div class="pdf-modal__head">
+                <div>
+                    <div id="pdfModalTitle" class="pdf-modal__title">Baixar PDFs</div>
+                    <div class="pdf-modal__sub">Escolha o plano e a categoria</div>
+                </div>
+
+                <button class="pdf-modal__close" type="button" aria-label="Fechar" data-pdf-close>✕</button>
+            </div>
+
+            <div class="pdf-tabs">
+                <button class="pdf-tab is-active" type="button" data-pdf-tab="basico">Básico</button>
+                <button class="pdf-tab" type="button" data-pdf-tab="plus">Plus</button>
+            </div>
+
+            <div class="pdf-grid" id="pdfGrid"></div>
+        </div>
+    </div>
 
 
 {% endblock %}
