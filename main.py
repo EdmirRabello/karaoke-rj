@@ -132,11 +132,19 @@ def on_startup():
 # ============================================================
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
-    return templates.TemplateResponse("home.html", {"request": request, "ASSET_V": ASSET_V})
+    return templates.TemplateResponse(
+        request=request,
+        name="home.html",
+        context={"ASSET_V": ASSET_V}
+    )
 
 @app.get("/catalogo", response_class=HTMLResponse)
 async def catalogo(request: Request):
-    return templates.TemplateResponse("catalogo.html", {"request": request, "ASSET_V": ASSET_V})
+    return templates.TemplateResponse(
+        request=request,
+        name="catalogo.html",
+        context={"ASSET_V": ASSET_V}
+    )
 
 # ============================================================
 # API SEARCH
