@@ -392,7 +392,7 @@ html[data-theme="dark"] input{
 
   /* MOBILE UI OFF */
   .appbar{ display: none !important; }
-  #btnInstall{ display: none !important; }
+
 
   /* LAYOUT DESKTOP */
   .cat-layout{
@@ -1385,5 +1385,206 @@ html[data-theme="dark"] input{
     background: #1B6DFF !important;
 }
 
+.send-wrap {
+    margin-top: 12px;
+}
 
+.send-btn{
+    width:100%;
+    min-height:42px;
 
+    border-radius:14px;
+    border:1px solid rgba(255,255,255,.14);
+
+    background:rgba(255,255,255,.06);
+    color:rgba(255,255,255,.94);
+
+    font-size:14px;
+    font-weight:900;
+
+    cursor:pointer;
+
+    transition:.2s;
+}
+
+.send-btn:hover{
+    background:rgba(255,255,255,.10);
+}
+
+.send-btn:not(:disabled){
+    box-shadow:0 8px 18px rgba(0,0,0,.18);
+}
+
+.krj-equip-box{
+    margin: 6px 0 12px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.92);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.krj-equip-box b{
+    color: #fff;
+}
+
+.krj-equip-box button{
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-weight: 900;
+    color: rgba(255,255,255,.92);
+    background: rgba(255,255,255,.08);
+    cursor: pointer;
+}
+
+.send-btn.is-disabled,
+.send-btn:disabled{
+    opacity:.45;
+    filter:grayscale(1);
+    cursor:not-allowed;
+}
+
+#results .row.row-selected{
+    border: 2px solid rgba(255,255,255,.95) !important;
+    outline: 3px solid rgba(255,43,94,.35);
+    box-shadow: 0 0 24px rgba(255,255,255,.28), 0 18px 40px rgba(0,0,0,.35) !important;
+}
+
+#results .row.row-selected::before{
+    content: "🎤 SUA ESCOLHA";
+    display: inline-flex;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 950;
+    color: #fff;
+    background: rgba(0,0,0,.28);
+    border: 1px solid rgba(255,255,255,.20);
+    margin-bottom: 2px;
+}
+#krjAvisoProximo{
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 999999 !important;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.82);
+    backdrop-filter: blur(4px);
+}
+
+#krjAvisoProximo.is-open{
+    display: flex !important;
+}
+
+.krj-aviso-card{
+    width: min(92vw, 460px);
+    padding: 28px;
+    border-radius: 28px;
+    border: 2px solid rgba(255,120,0,.85);
+    background: linear-gradient(135deg, #ff4b00, #2b0000);
+    box-shadow: 0 0 45px rgba(255,80,0,.75);
+    color: #fff;
+    text-align: center;
+    animation: krjPulse 1s infinite;
+}
+
+.krj-aviso-icon{
+    font-size: 62px;
+    margin-bottom: 12px;
+}
+
+.krj-aviso-title{
+    font-size: 38px;
+    font-weight: 950;
+}
+
+.krj-aviso-sub{
+    margin-top: 10px;
+    font-size: 22px;
+    font-weight: 900;
+}
+
+.krj-aviso-code{
+    margin-top: 16px;
+    font-size: 17px;
+    opacity: .92;
+}
+
+@keyframes krjPulse{
+    0%,100%{ transform: scale(1); }
+    50%{ transform: scale(1.04); }
+}
+
+#krjPlanoBox{
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.86);
+    backdrop-filter: blur(4px);
+}
+
+#krjPlanoBox.is-open{
+    display: flex;
+}
+
+.krj-plano-card{
+    width: min(92vw, 420px);
+    padding: 26px;
+    border-radius: 26px;
+    background: #111;
+    color: #fff;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,.18);
+}
+
+.krj-plano-icon{
+    font-size: 46px;
+    margin-bottom: 10px;
+}
+
+.krj-plano-title{
+    font-size: 24px;
+    font-weight: 950;
+}
+
+.krj-plano-sub{
+    margin: 10px 0 18px;
+    opacity: .8;
+}
+
+.krj-plano-btn{
+    width: 100%;
+    margin-top: 10px;
+    padding: 16px;
+    border: 0;
+    border-radius: 18px;
+    background: rgba(255,255,255,.10);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 950;
+    cursor: pointer;
+}
+
+.krj-plano-btn span{
+    display: block;
+    margin-top: 4px;
+    font-size: 13px;
+    opacity: .8;
+}
+
+.krj-plano-plus{
+    background: var(--brand);
+}
+
+#btnInstall[hidden]{
+    display:none !important;
+}

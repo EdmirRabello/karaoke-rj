@@ -83,11 +83,548 @@ const azRail = el("azRail");
 // Outros
 // ==========================================================
 const btnInstall = el("btnInstall");
+btnInstall?.addEventListener("click", () => {
+
+    abrirEscolhaPlanoKRJ();
+
+});
 
 // ==========================================================
 // Estado
 // ==========================================================
 let view = "catalog"; // "catalog" | "favorites" | "top"
+
+const KRJ_MAQUINA_KEY = "maquina_krj";
+const KRJ_MAQUINA_DATA_KEY = "maquina_krj_data";
+const KRJ_PLANO_KEY = "krj_plano";
+
+const krjEquipName = el("krjEquipName");
+const btnTrocarEquip = el("btnTrocarEquip");
+
+const KRJ_PEDIDO_ATIVO_KEY = "krj_pedido_ativo";
+
+let krjAvisoTocado = false;
+let krjAvisoAberto = false;
+const krjSomProximo = new Audio("/static/audio/proximo.mp3");
+krjSomProximo.preload = "auto";
+
+document.addEventListener("click", () => {
+
+    try {
+
+        krjSomProximo.volume = 0;
+
+        krjSomProximo.play()
+            .then(() => {
+                krjSomProximo.pause();
+                krjSomProximo.currentTime = 0;
+                krjSomProximo.volume = 1;
+            });
+
+    } catch(e) {}
+
+}, { once: true });
+
+function modoEnvioKRJ() {
+    const p = new URLSearchParams(window.location.search);
+
+    return !!(
+        p.get("m") ||
+        p.get("maquina")
+    );
+}
+
+function mostrarAvisoProximoKRJ(codigo) {
+    let box = document.getElementById("krjAvisoProximo");
+
+    if (!box) {
+        box = document.createElement("div");
+        box.id = "krjAvisoProximo";
+        box.innerHTML = `
+            <div class="krj-aviso-card">
+                <div class="krj-aviso-icon">🔔</div>
+                <div>
+
+                 <div class="krj-aviso-title">SUA VEZ ESTÁ CHEGANDO!</div>
+           <div class="krj-aviso-sub">Dirija-se ao equipamento para cantar</div>
+         <div class="krj-aviso-code">Código: ${codigo}</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(box);
+    }
+
+    box.classList.add("is-open");
+    try {
+
+    krjSomProximo.pause();
+    krjSomProximo.currentTime = 0;
+
+    krjSomProximo.play().catch(err => {
+        console.log("Som bloqueado:", err);
+    });
+
+} catch(err) {
+    console.log(err);
+}
+
+setTimeout(() => {
+
+    document
+        .getElementById("krjAvisoProximo")
+        ?.classList.remove("is-open");
+
+}, 20000);
+
+    if (!krjAvisoTocado) {
+        krjAvisoTocado = true;
+    }
+}
+async function verificarFilaAtual() {
+    const pedido = lerPedidoAtivo();
+    if (!pedido) return;
+
+    try {
+        const resp = await fetch(
+            `/api/monitor/ver_fila?maquina=${encodeURIComponent(pedido.maquina)}`,
+            { cache: "no-store" }
+        );
+
+        const data = await resp.json();
+        const filaTexto = data.fila || "";
+        const fila = filaTexto
+        .split(",")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+        const codigoPedido =
+    String(pedido.codigo || "")
+    .padStart(5, "0");
+
+const filaNormalizada = fila.map(x =>
+    String(x).padStart(5, "0")
+);
+
+const ocorrenciaPedido =
+    Number(pedido.ocorrencia || 1);
+
+let pos = -1;
+let contadorCodigo = 0;
+
+for (let i = 0; i < filaNormalizada.length; i++) {
+    if (filaNormalizada[i] === codigoPedido) {
+        contadorCodigo++;
+
+        if (contadorCodigo === ocorrenciaPedido) {
+            pos = i;
+            break;
+        }
+    }
+}
+
+
+if (pos >= 0) {
+if (pos === 0) {
+
+const tempoDesdeEnvio =
+        Date.now() - Number(pedido.enviadoEm || 0);
+
+    if (tempoDesdeEnvio < 10000) {
+
+        setStatus(
+            "info",
+            `🎤 ${pedido.codigo} - ${pedido.titulo}\n⏳ Música enviada para a fila`
+        );
+
+        bloquearEnvioTemporario("⏳ Na fila");
+        return;
+    }
+
+    setStatus(
+        "info",
+        `🎤 ${pedido.codigo} - ${pedido.titulo}\n🥇 Sua vez está chegando`
+    );
+
+    if (!krjAvisoAberto) {
+
+        krjAvisoAberto = true;
+
+        mostrarAvisoProximoKRJ(
+            pedido.codigo
+        );
+
+    }
+
+}else {
+
+        setStatus(
+            "info",
+            `🎤 ${pedido.codigo} - ${pedido.titulo}\n⏳ Posição: ${pos + 1}`
+        );
+
+    }
+
+    bloquearEnvioTemporario("⏳ Na fila");
+
+} else {
+
+    const enviadoEm = Number(pedido.enviadoEm || 0);
+    const tempo = Date.now() - enviadoEm;
+
+    if (tempo < 60000) {
+
+        setStatus(
+            "info",
+            "⏳ Processando sua música na máquina...\nAguarde alguns instantes."
+        );
+
+        atualizarBotoesEnviar();
+        return;
+    }
+
+    setStatus(
+        "info",
+        "🎤 Você já pode enviar outra música."
+    );
+
+    limparPedidoAtivo();
+
+    krjAvisoTocado = false;
+    krjAvisoAberto = false;
+
+    document
+        .getElementById("krjAvisoProximo")
+        ?.classList.remove("is-open");
+
+    liberarEnvio();
+}
+
+    } catch {
+        setStatus("info", "🎤 Aguardando atualização da fila...");
+    }
+}
+
+
+
+function salvarPedidoAtivo(codigo, maquina, titulo, cantor, ocorrencia = 1) {
+localStorage.setItem(KRJ_PEDIDO_ATIVO_KEY, JSON.stringify({
+    codigo: String(codigo || "").padStart(5, "0"),
+    maquina: String(maquina || "").toUpperCase(),
+    titulo: titulo || "",
+    cantor: cantor || "",
+    ocorrencia: Number(ocorrencia || 1),
+    enviadoEm: Date.now()
+}));
+}
+
+function lerPedidoAtivo() {
+    try {
+        return JSON.parse(localStorage.getItem(KRJ_PEDIDO_ATIVO_KEY) || "null");
+    } catch {
+        return null;
+    }
+}
+
+function limparPedidoAtivo() {
+   localStorage.removeItem(KRJ_PEDIDO_ATIVO_KEY);
+}
+
+
+
+function bloquearEnvioTemporario(texto = "Enviado") {
+    document.querySelectorAll(".send-btn").forEach(btn => {
+        btn.disabled = true;
+        btn.classList.add("is-disabled");
+        btn.textContent = texto;
+    });
+}
+
+function liberarEnvio() {
+    document.querySelectorAll(".send-btn").forEach(btn => {
+        btn.disabled = false;
+        btn.classList.remove("is-disabled");
+        btn.textContent = "🎤 Cantar Esta Música";
+    });
+}
+
+function hojeKRJ() {
+    return new Date().toISOString().slice(0, 10);
+}
+
+function getMaquinaKRJ() {
+
+    const maq = localStorage.getItem(KRJ_MAQUINA_KEY) || "";
+    const data = localStorage.getItem(KRJ_MAQUINA_DATA_KEY) || "";
+
+    if (!maq) return "";
+
+    if (data !== hojeKRJ()) return "";
+
+    return maq;
+}
+
+function setMaquinaKRJ(nome) {
+
+    localStorage.setItem(
+        KRJ_MAQUINA_KEY,
+        String(nome || "").trim().toUpperCase()
+    );
+
+    localStorage.setItem(
+        KRJ_MAQUINA_DATA_KEY,
+        hojeKRJ()
+    );
+
+    atualizarEquipamentoTela();
+    atualizarBotoesEnviar();
+}
+
+function atualizarEquipamentoTela() {
+
+    const maq = getMaquinaKRJ();
+
+    if (krjEquipName) {
+        krjEquipName.textContent =
+            maq || "Leia o QR Code da máquina";
+    }
+}
+
+function atualizarBotoesEnviar() {
+
+    const modoEnvio = modoEnvioKRJ();
+
+    document.querySelectorAll(".send-wrap").forEach(wrap => {
+        wrap.style.display = modoEnvio ? "" : "none";
+    });
+
+    if (!modoEnvio) return;
+
+    const maq = getMaquinaKRJ();
+    const pedidoAtivo = lerPedidoAtivo();
+    const bloqueado = !!pedidoAtivo;
+
+    document.querySelectorAll(".send-btn").forEach(btn => {
+        btn.disabled = !maq || bloqueado;
+        btn.classList.toggle("is-disabled", !maq || bloqueado);
+
+        if (!maq) {
+            btn.textContent = "📷 Leia o QR Code";
+        } else if (bloqueado) {
+            btn.textContent = "⏳ Na fila";
+        } else {
+            btn.textContent = "🎤 Cantar Esta Música";
+        }
+    });
+}
+btnTrocarEquip?.addEventListener("click", () => {
+
+    if (!confirm("Deseja trocar de equipamento?")) {
+        return;
+    }
+
+    localStorage.removeItem(KRJ_MAQUINA_KEY);
+    localStorage.removeItem(KRJ_MAQUINA_DATA_KEY);
+    limparPedidoAtivo();
+
+    krjAvisoTocado = false;
+    krjAvisoAberto = false;
+
+    document
+        .getElementById("krjAvisoProximo")
+        ?.classList.remove("is-open");
+
+    atualizarEquipamentoTela();
+    atualizarBotoesEnviar();
+    liberarEnvio();
+
+    setStatus(
+        "info",
+        "📷 Escaneie novamente o QR Code da máquina."
+    );
+
+});
+
+async function lerMaquinaDoQRCode() {
+
+    const p = new URLSearchParams(
+        window.location.search
+    );
+
+    const maq =
+        p.get("m") ||
+        p.get("maquina");
+
+    const plano =
+        p.get("p") ||
+        p.get("plano");
+
+    if (plano) {
+        localStorage.setItem(
+            KRJ_PLANO_KEY,
+            plano.toUpperCase()
+        );
+    }
+
+    if (!maq) return;
+
+    try {
+
+        const resp = await fetch(
+            `/api/monitor/status?maquina=${encodeURIComponent(maq)}`,
+            { cache: "no-store" }
+        );
+
+        const data = await resp.json();
+
+        if (data.ok && data.online) {
+
+            setMaquinaKRJ(data.maquina);
+
+            setStatus(
+                "success",
+                `✅ Conectado à máquina ${data.maquina}`
+            );
+
+        } else {
+
+            localStorage.removeItem(KRJ_MAQUINA_KEY);
+            localStorage.removeItem(KRJ_MAQUINA_DATA_KEY);
+
+            setStatus(
+                "error",
+                "⚠️ Máquina offline ou não encontrada."
+            );
+
+        }
+
+    } catch(err) {
+
+        setStatus(
+            "error",
+            "⚠️ Não foi possível verificar a máquina."
+        );
+
+    }
+}
+
+lerMaquinaDoQRCode().then(() => {
+    verificarPlanoInicialKRJ();
+    atualizarBotaoPlanoKRJ();
+
+    if (!modoEnvioKRJ()) {
+        document.getElementById("krjEquipBox")?.remove();
+    }
+
+    setTimeout(() => {
+        atualizarEquipamentoTela();
+        atualizarBotoesEnviar();
+    }, 500);
+});
+
+function verificarPlanoInicialKRJ() {
+
+    const planoAtual = localStorage.getItem(KRJ_PLANO_KEY);
+
+    const params = new URLSearchParams(window.location.search);
+
+    const veioPlanoNaUrl =
+        params.has("p") ||
+        params.has("plano");
+
+    if (planoAtual || veioPlanoNaUrl) {
+        return;
+    }
+
+    abrirEscolhaPlanoKRJ();
+}
+
+function abrirEscolhaPlanoKRJ() {
+
+    let box = document.getElementById("krjPlanoBox");
+
+    if (!box) {
+        box = document.createElement("div");
+        box.id = "krjPlanoBox";
+
+        box.innerHTML = `
+            <div class="krj-plano-card">
+                <div class="krj-plano-icon">🎵</div>
+
+                <div class="krj-plano-title">
+                    Qual catálogo deseja consultar?
+                </div>
+
+                <div class="krj-plano-sub">
+                    Consulte o responsável pelo equipamento.
+                </div>
+
+                <button type="button" class="krj-plano-btn krj-plano-plus" data-plano="PLUS">
+                    PLUS
+                    <span>Mais de 27.000 músicas</span>
+                </button>
+
+                <button type="button" class="krj-plano-btn" data-plano="BASICO">
+                    BÁSICO
+                    <span>Mais de 12.000 músicas</span>
+                </button>
+            </div>
+        `;
+
+        document.body.appendChild(box);
+
+        box.addEventListener("click", e => {
+
+            const btn = e.target.closest("[data-plano]");
+            if (!btn) return;
+
+            const plano = btn.dataset.plano;
+
+            localStorage.setItem(KRJ_PLANO_KEY, plano);
+
+            box.classList.remove("is-open");
+
+            atualizarBotaoPlanoKRJ();
+
+            resetToAutoCatalogMode();
+            doSearch(true);
+
+        });
+    }
+
+    box.classList.add("is-open");
+}
+
+function atualizarBotaoPlanoKRJ() {
+
+    if (!btnInstall) return;
+
+    if (modoEnvioKRJ()) {
+        btnInstall.hidden = true;
+        btnInstall.style.display = "none";
+        return;
+    }
+
+    btnInstall.hidden = false;
+    btnInstall.style.display = "";
+
+    const plano =
+        localStorage.getItem(KRJ_PLANO_KEY) || "";
+
+    if (plano === "BASICO") {
+        btnInstall.innerHTML = "🎵 BÁSICO";
+    } else if (plano === "PLUS") {
+        btnInstall.innerHTML = "🎵 PLUS";
+    } else {
+        btnInstall.innerHTML = "🎵 Catálogo";
+    }
+}
+
+setTimeout(() => {
+
+    atualizarEquipamentoTela();
+    atualizarBotoesEnviar();
+
+}, 500);
 
 // Paginação por letra (sempre)
 let paging = {
@@ -273,6 +810,7 @@ function updateFavCount() {
         void badge.offsetWidth;
         badge.classList.add("bump");
     }
+
 }
 
 // Migração antiga -> nova chave
@@ -446,12 +984,15 @@ function renderRows(items, opts = {}) {
           <div class="cell-actions">${actionsHtml}</div>
         </div>`;
         } else {
-            html += `
-        <div class="row ${view === "top" ? "row-top" : ""}"
-             data-code="${esc(it.code)}"
-             data-letter="${esc(letterKey)}">
+         const pedidoAtivo = lerPedidoAtivo();
+         const selecionada =
+         pedidoAtivo &&
+         pedidoAtivo.codigo === codeStr;
 
-          ${view === "top" ? `<div class="cell-rank-mobile">${rankHtml}</div>` : ``}
+         html += `
+         <div class="row ${view === "top" ? "row-top" : ""} ${selecionada ? "row-selected" : ""}"
+         data-code="${esc(it.code)}"
+         data-letter="${esc(letterKey)}">
 
           <div class="cell-topline">
             <div class="code-pack">
@@ -479,6 +1020,17 @@ function renderRows(items, opts = {}) {
             <span class="lbl">Cantor:</span>
             <span class="val">${esc(singer)}</span>
           </div>
+
+ ${modoEnvioKRJ() ? `
+<div class="send-wrap">
+  <button class="send-btn"
+   data-send="${esc(codeStr)}"
+   type="button">
+   🎤 Cantar Esta Música
+  </button>
+</div>
+` : ``}
+
         </div>`;
         }
     }
@@ -496,10 +1048,15 @@ function getTipoSelecionado() {
 }
 
 function getPlanoSelecionado() {
-    const p = (filterPlano?.value || "").trim().toLowerCase();
-    if (!p) return null;
-    if (p === "basico" || p === "básico") return "basico";
-    if (p === "plus") return "plus"; // se seu backend aceitar
+
+    const plano =
+        localStorage.getItem(KRJ_PLANO_KEY);
+
+    if (!plano) return null;
+
+    if (plano === "BASICO") return "basico";
+
+    // PLUS mostra tudo
     return null;
 }
 
@@ -804,6 +1361,175 @@ resultsDiv?.addEventListener("click", async (e) => {
     }
 });
 
+
+document.addEventListener("click", async (e) => {
+
+    const btn = e.target.closest(".send-btn");
+    if (!btn) return;
+    const row = btn.closest(".row");
+
+    const titulo =
+     row?.querySelector(".cell-title .val")?.textContent?.trim()
+     || row?.querySelector(".cell-title")?.textContent?.trim()
+     || "";
+
+    const cantor =
+     row?.querySelector(".cell-singer .val")?.textContent?.trim()
+     || row?.querySelector(".cell-singer")?.textContent?.trim()
+     || "";
+     let maquina = getMaquinaKRJ();
+
+    if (!maquina) {
+    alert(
+        "Leia o QR Code da máquina para enviar músicas."
+    );
+    return;
+}
+
+
+    const codigo = btn.dataset.send;
+try {
+    const statusResp = await fetch(
+        `/api/monitor/status?maquina=${encodeURIComponent(maquina)}`,
+        { cache: "no-store" }
+    );
+
+    const statusData = await statusResp.json();
+
+    if (!statusData.ok || !statusData.online) {
+        localStorage.removeItem(KRJ_MAQUINA_KEY);
+        localStorage.removeItem(KRJ_MAQUINA_DATA_KEY);
+        limparPedidoAtivo();
+
+        atualizarEquipamentoTela();
+        atualizarBotoesEnviar();
+
+        setStatus(
+            "error",
+            "⚠️ Equipamento offline.\nProcure o responsável pelo karaokê."
+        );
+
+        alert("Equipamento offline. Procure o responsável pelo karaokê.");
+        return;
+    }
+
+} catch (e) {
+    setStatus(
+        "error",
+        "⚠️ Não foi possível verificar o equipamento."
+    );
+
+    alert("Não foi possível verificar o equipamento.");
+    return;
+}
+
+let qtdFilaAntes = -1;
+let ocorrenciaCodigoPedido = 1;
+let filaAntesNormalizada = [];
+
+try {
+    const controller = new AbortController();
+
+    setTimeout(() => {
+        controller.abort();
+    }, 1500);
+
+    const filaResp = await fetch(
+        `/api/monitor/ver_fila?maquina=${encodeURIComponent(maquina)}`,
+        {
+            cache: "no-store",
+            signal: controller.signal
+        }
+    );
+
+    const filaData = await filaResp.json();
+
+    const fila =
+        String(filaData.fila || "")
+        .split(",")
+        .map(x => x.trim())
+        .filter(Boolean);
+
+    qtdFilaAntes = fila.length;
+    filaAntesNormalizada = fila.map(x =>
+    String(x).padStart(5, "0")
+);
+
+ocorrenciaCodigoPedido =
+    filaAntesNormalizada.filter(x =>
+        x === String(codigo).padStart(5, "0")
+    ).length + 1;
+
+} catch(e) {
+    console.warn("Não consegui ler a fila antes do envio:", e);
+    qtdFilaAntes = -1;
+}
+
+if (qtdFilaAntes >= 10) {
+
+    setStatus(
+        "error",
+        "🚫 Fila cheia no momento.\nTente novamente mais tarde."
+    );
+
+    setTimeout(() => {
+        setStatus("", "");
+    }, 5000);
+
+    return;
+}
+
+    try {
+
+        const resp = await fetch(
+            `/api/teste/enviar?maquina=${encodeURIComponent(maquina)}&codigo=${encodeURIComponent(codigo)}`,
+            { cache: "no-store" }
+        );
+
+        const data = await resp.json();
+
+        if (!data.ok) {
+             alert("Não foi possível enviar a música.");
+            return;
+        }
+salvarPedidoAtivo(
+    codigo,
+    maquina,
+    titulo,
+    cantor,
+    ocorrenciaCodigoPedido
+);
+
+document.querySelectorAll(".row-selected")
+    .forEach(x => x.classList.remove("row-selected"));
+
+btn.closest(".row")?.classList.add("row-selected");
+
+atualizarBotoesEnviar();
+
+if (qtdFilaAntes === 0) {
+    setStatus(
+        "success",
+        `🎤 ${codigo} - ${titulo}\n\n🎶 Música enviada para a máquina!\n\nPrepare-se para cantar.\nSe houver alguém cantando, você será o próximo.`
+    );
+    bloquearEnvioTemporario("⏳ Processando...");
+} else if (qtdFilaAntes === 1) {
+    setStatus("info", `🎤 ${codigo} - ${titulo}\n🥈 Existe 1 música na fila.\nPrepare-se para cantar em breve.`);
+} else if (qtdFilaAntes > 1) {
+    setStatus("info", `🎤 ${codigo} - ${titulo}\n⏳ Existem ${qtdFilaAntes} músicas na fila.\nAcompanhe sua posição pelo catálogo.`);
+} else {
+    setStatus("info", `🎤 ${codigo} - ${titulo}\n⏳ Enviado. Aguardando entrar na fila...`);
+}
+setTimeout(verificarFilaAtual, 8000);
+
+    } catch (err) {
+
+        alert("Erro ao enviar música.");
+
+    }
+
+});
+
 // ==========================================================
 // Reset para AUTO previsível
 // ==========================================================
@@ -1027,31 +1753,9 @@ setMode("catalog");
 resetToAutoCatalogMode();
 if (qInput) qInput.value = "";
 ensureCatalogTotalAll();
+
 doSearch(true);
 
-// ==========================================================
-// PWA Install (Android/Chrome)
-// ==========================================================
-let deferredInstallPrompt = null;
-
-window.addEventListener("beforeinstallprompt", (e) => {
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    if (btnInstall) btnInstall.hidden = false;
-});
-
-if (btnInstall) {
-    btnInstall.addEventListener("click", async () => {
-        if (!deferredInstallPrompt) return;
-        deferredInstallPrompt.prompt();
-        try {
-            await deferredInstallPrompt.userChoice;
-        } catch {
-        }
-        deferredInstallPrompt = null;
-        btnInstall.hidden = true;
-    });
-}
 
 // ==========================================================
 // PDFs (Modal)
@@ -1166,3 +1870,13 @@ document.querySelectorAll(".pdf-tab").forEach(btn => {
         renderPdfGrid();
     });
 });
+
+
+if (modoEnvioKRJ()) {
+    setInterval(() => {
+        if (lerPedidoAtivo()) {
+            verificarFilaAtual();
+        }
+    }, 15000);
+}
+

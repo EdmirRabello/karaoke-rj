@@ -1,0 +1,22 @@
+1 passo alterar o bd.xls na pasta do projeto
+2 passo git add banco.xlsx
+3 passo git status
+4 passo 
+
+A saída deve ficar parecida com:
+
+Changes to be committed:
+    modified: banco.xlsx
+
+5 passo git commit -m "Atualização banco de dados"
+
+6 passo aguardar a mensagem de sucesso, execute:
+
+
+atualizar o banco de dados no reader
+
+
+1 passo no power shell
+$env:DATABASE_URL='postgresql://neondb_owner:npg_MOK6vjJ2zxqB@ep-rough-waterfall-afb48ot8-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+
+2 passo no power shell py import_excel.py banco.xlsx
