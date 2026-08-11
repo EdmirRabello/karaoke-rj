@@ -1,0 +1,26 @@
+KRJ Connect v2.0.0 mínima - nascimento da primeira empresa
+
+Arquivos para substituir/adicionar:
+- main.py
+- empresas.py
+- temas.py (novo)
+- templates/catalogo.html
+- templates/portal.html (novo)
+- static/css/portal.css (novo)
+
+O que muda:
+- Cria sistema de temas oficiais.
+- Cria sistema de módulos por empresa.
+- Cadastra/atualiza Karaokê RJ com tema exclusivo KRJ.
+- Cadastra/atualiza Vivi Okê com tema Party, plano START.
+- Vivi Okê tem Portal + Redes + PDF, mas NÃO acessa o catálogo.
+
+Como testar local:
+1) Rode o projeto normalmente.
+2) Acesse: http://127.0.0.1:8000/?empresa=vivioke
+3) Teste também: http://127.0.0.1:8000/catalogo?empresa=vivioke
+   Deve voltar para o portal, pois Vivi Okê não tem módulo catalogo.
+
+Observação:
+- O campo pdf_url da Vivi Okê está vazio por enquanto. O botão PDF só aparece quando houver link.
+- Não mexe no catalog.css.

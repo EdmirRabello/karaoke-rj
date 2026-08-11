@@ -1,0 +1,477 @@
+/* ============================================================
+   Kantus Portal - Sprint 2
+   Portal com aparência de aplicativo, modular por empresa.
+   ============================================================ */
+
+html, body{
+    min-height:100%;
+}
+
+body{
+    background:#eef2f8;
+    color:var(--text);
+}
+
+.kantus-portal{
+    min-height:100dvh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:
+        radial-gradient(circle at 20% 8%, color-mix(in srgb, var(--brand-accent) 24%, transparent), transparent 22%),
+        radial-gradient(circle at 90% 20%, color-mix(in srgb, var(--brand-2) 22%, transparent), transparent 26%),
+        linear-gradient(145deg, color-mix(in srgb, var(--brand-dark) 96%, #000 4%), color-mix(in srgb, var(--brand) 24%, var(--brand-dark)) 58%, var(--bg));
+    overflow:hidden;
+    position:relative;
+}
+
+.kantus-portal::before,
+.kantus-portal::after{
+    content:"";
+    position:absolute;
+    width:360px;
+    height:360px;
+    border-radius:50%;
+    pointer-events:none;
+    filter:blur(4px);
+}
+
+.kantus-portal::before{
+    left:-170px;
+    bottom:-170px;
+    background:radial-gradient(circle, color-mix(in srgb, var(--brand) 38%, transparent), transparent 68%);
+}
+
+.kantus-portal::after{
+    right:-170px;
+    top:-170px;
+    background:radial-gradient(circle, color-mix(in srgb, var(--brand-2) 34%, transparent), transparent 68%);
+}
+
+.kantus-shell{
+    position:relative;
+    z-index:2;
+    width:min(100%, 430px);
+    min-height:min(860px, calc(100dvh - 36px));
+    border-radius:36px;
+    overflow:hidden;
+    padding:20px;
+    color:#fff;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.04)),
+        radial-gradient(circle at 50% 28%, color-mix(in srgb, var(--brand) 42%, transparent), transparent 32%),
+        linear-gradient(180deg, color-mix(in srgb, var(--brand-dark) 92%, #000 8%), color-mix(in srgb, var(--brand) 30%, #060611 70%));
+    border:1px solid rgba(255,255,255,.14);
+    box-shadow:
+        0 30px 90px rgba(0,0,0,.42),
+        inset 0 0 0 1px rgba(255,255,255,.05);
+    display:flex;
+    flex-direction:column;
+}
+
+.theme-party .kantus-shell{
+    background:
+        radial-gradient(circle at 18% 16%, rgba(255,229,78,.26), transparent 22%),
+        radial-gradient(circle at 84% 19%, rgba(74,201,255,.30), transparent 24%),
+        radial-gradient(circle at 50% 50%, rgba(255,75,209,.20), transparent 38%),
+        linear-gradient(160deg, #742cff 0%, #ff4bd1 58%, #ffcf59 130%);
+}
+
+.kantus-bg-icons{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    opacity:.28;
+    font-weight:900;
+}
+
+.kantus-bg-icons span{
+    position:absolute;
+    color:#fff;
+    text-shadow:0 8px 24px rgba(0,0,0,.18);
+}
+
+.kantus-bg-icons span:nth-child(1){ left:32px; top:80px; font-size:30px; transform:rotate(-18deg); }
+.kantus-bg-icons span:nth-child(2){ right:46px; top:108px; font-size:26px; transform:rotate(16deg); }
+.kantus-bg-icons span:nth-child(3){ right:24px; top:310px; font-size:34px; transform:rotate(18deg); }
+.kantus-bg-icons span:nth-child(4){ left:26px; bottom:250px; font-size:28px; }
+.kantus-bg-icons span:nth-child(5){ right:50px; bottom:185px; font-size:24px; }
+
+.kantus-topbar{
+    position:relative;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:26px;
+}
+
+.kantus-product,
+.kantus-profile-pill{
+    height:36px;
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    padding:0 13px;
+    border-radius:999px;
+    background:rgba(255,255,255,.16);
+    border:1px solid rgba(255,255,255,.16);
+    backdrop-filter:blur(10px);
+    color:#fff;
+    font-size:13px;
+    font-weight:950;
+}
+
+.kantus-product__dot{
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    background:rgba(255,255,255,.22);
+    font-size:13px;
+}
+
+.kantus-profile-pill{
+    opacity:.82;
+    font-size:11px;
+    letter-spacing:.5px;
+}
+
+.kantus-hero{
+    position:relative;
+    z-index:2;
+    text-align:center;
+    padding:4px 4px 0;
+}
+
+.kantus-logo-wrap{
+    width:136px;
+    height:136px;
+    margin:0 auto 18px;
+    border-radius:36px;
+    display:grid;
+    place-items:center;
+    background:rgba(255,255,255,.92);
+    border:4px solid rgba(255,255,255,.70);
+    box-shadow:
+        0 18px 48px rgba(0,0,0,.22),
+        0 0 0 10px rgba(255,255,255,.10);
+    overflow:hidden;
+}
+
+.kantus-logo-wrap:has(.kantus-logo-placeholder){
+    border-radius:50%;
+}
+
+.kantus-logo{
+    width:118px;
+    height:118px;
+    object-fit:contain;
+}
+
+.kantus-logo-placeholder{
+    width:100%;
+    height:100%;
+    display:grid;
+    place-items:center;
+    font-size:72px;
+    font-weight:1000;
+    color:#fff;
+    background:linear-gradient(135deg, rgba(255,255,255,.22), var(--brand), var(--brand-2));
+}
+
+.kantus-hero h1{
+    margin:0;
+    color:#fff;
+    font-size:clamp(36px, 10vw, 54px);
+    line-height:.95;
+    letter-spacing:-1.8px;
+    font-weight:1000;
+    text-shadow:0 12px 26px rgba(0,0,0,.25);
+}
+
+.kantus-hero p{
+    margin:14px auto 20px;
+    max-width:330px;
+    color:rgba(255,255,255,.92);
+    font-size:16px;
+    line-height:1.38;
+    font-weight:700;
+    text-shadow:0 5px 14px rgba(0,0,0,.18);
+}
+
+.kantus-main-actions,
+.kantus-section,
+.kantus-system-card,
+.kantus-footer{
+    position:relative;
+    z-index:2;
+}
+
+.kantus-main-actions{
+    display:grid;
+    gap:12px;
+    margin:2px 0 18px;
+}
+
+.kantus-action{
+    min-height:68px;
+    padding:12px 14px;
+    border-radius:24px;
+    text-decoration:none;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    color:#fff;
+    border:1px solid rgba(255,255,255,.20);
+    box-shadow:0 16px 36px rgba(0,0,0,.22);
+    transition:.22s ease;
+}
+
+.kantus-action:hover,
+.kantus-tile:hover,
+.kantus-system-card a:hover{
+    transform:translateY(-2px);
+}
+
+.kantus-action--whatsapp{
+    background:linear-gradient(135deg, #24d65a, #049334);
+}
+
+.kantus-action__icon{
+    width:42px;
+    height:42px;
+    border-radius:16px;
+    display:grid;
+    place-items:center;
+    background:rgba(255,255,255,.18);
+    font-size:24px;
+}
+
+.kantus-action b,
+.kantus-action small{
+    display:block;
+    text-align:left;
+}
+
+.kantus-action b{
+    font-size:17px;
+    font-weight:1000;
+    line-height:1.1;
+}
+
+.kantus-action small{
+    margin-top:4px;
+    color:rgba(255,255,255,.78);
+    font-size:12px;
+    font-weight:800;
+}
+
+.kantus-action__arrow{
+    margin-left:auto;
+    font-size:20px;
+    opacity:.85;
+}
+
+.kantus-section{
+    background:rgba(255,255,255,.92);
+    color:#171325;
+    border-radius:28px;
+    padding:16px;
+    box-shadow:0 18px 42px rgba(0,0,0,.20);
+    border:1px solid rgba(255,255,255,.35);
+    backdrop-filter:blur(10px);
+}
+
+.kantus-section__title{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    gap:10px;
+    margin-bottom:12px;
+}
+
+.kantus-section__title span{
+    font-weight:1000;
+    font-size:18px;
+}
+
+.kantus-section__title small{
+    color:#6c647a;
+    font-size:12px;
+    font-weight:800;
+}
+
+.kantus-grid-actions{
+    display:grid;
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+    gap:10px;
+}
+
+.kantus-tile{
+    min-height:92px;
+    padding:14px 10px;
+    border-radius:22px;
+    background:linear-gradient(180deg,#fff,#f6f3ff);
+    color:#171325;
+    text-decoration:none;
+    border:1px solid rgba(0,0,0,.06);
+    box-shadow:0 10px 24px rgba(25,20,50,.08);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    transition:.22s ease;
+}
+
+.kantus-tile i{
+    width:44px;
+    height:44px;
+    border-radius:18px;
+    display:grid;
+    place-items:center;
+    color:#fff;
+    background:linear-gradient(135deg, var(--brand), var(--brand-2));
+    font-size:24px;
+    box-shadow:0 10px 22px color-mix(in srgb, var(--brand) 28%, transparent);
+}
+
+.kantus-tile b{
+    font-size:14px;
+    font-weight:1000;
+    line-height:1.1;
+}
+
+.kantus-tile small{
+    color:#6c647a;
+    font-size:11px;
+    font-weight:800;
+}
+
+.kantus-system-card{
+    margin-top:14px;
+    min-height:72px;
+    border-radius:24px;
+    padding:13px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.16);
+    color:#fff;
+    backdrop-filter:blur(10px);
+}
+
+.kantus-system-card small,
+.kantus-system-card b{
+    display:block;
+}
+
+.kantus-system-card small{
+    color:rgba(255,255,255,.70);
+    font-weight:800;
+    font-size:12px;
+}
+
+.kantus-system-card b{
+    font-weight:1000;
+    font-size:16px;
+}
+
+.kantus-system-card a{
+    flex:0 0 auto;
+    text-decoration:none;
+    color:#171325;
+    background:#fff;
+    border-radius:16px;
+    padding:10px 14px;
+    font-size:13px;
+    font-weight:1000;
+    transition:.22s ease;
+}
+
+.kantus-footer{
+    margin-top:auto;
+    padding:18px 4px 2px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    flex-wrap:wrap;
+    color:rgba(255,255,255,.72);
+    font-size:11px;
+    font-weight:800;
+}
+
+.kantus-footer b{
+    color:#fff;
+}
+
+@media (max-width:520px){
+    .kantus-portal{
+        padding:0;
+        align-items:stretch;
+    }
+
+    .kantus-shell{
+        width:100%;
+        min-height:100dvh;
+        border-radius:0;
+        padding:18px 16px 14px;
+        box-shadow:none;
+    }
+
+    .kantus-topbar{
+        margin-bottom:18px;
+    }
+
+    .kantus-logo-wrap{
+        width:126px;
+        height:126px;
+        margin-bottom:14px;
+    }
+
+    .kantus-logo{
+        width:108px;
+        height:108px;
+    }
+
+    .kantus-logo-placeholder{
+        font-size:64px;
+    }
+
+    .kantus-hero h1{
+        font-size:42px;
+    }
+
+    .kantus-hero p{
+        font-size:15px;
+        margin-bottom:16px;
+    }
+
+    .kantus-action{
+        min-height:64px;
+        border-radius:22px;
+    }
+
+    .kantus-section{
+        border-radius:24px;
+        padding:14px;
+    }
+
+    .kantus-tile{
+        min-height:86px;
+        border-radius:20px;
+    }
+}
+
+@media (max-width:360px){
+    .kantus-grid-actions{
+        grid-template-columns:1fr;
+    }
+}

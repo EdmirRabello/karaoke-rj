@@ -646,6 +646,175 @@ let catalogTotalBusy = false;
 let advancing = false;
 
 // ==========================================================
+// Catálogo local (IndexedDB) — SOMENTE CONSULTA
+// ==========================================================
+const KRJ_CATALOG_DB = "krj_catalog_cache_v1";
+const KRJ_CATALOG_STORE = "snapshots";
+const KRJ_CATALOG_RELEASE = String(window.KRJ_EMPRESA?.catalogo_release || "1");
+const KRJ_CATALOG_EMPRESA = String(window.KRJ_EMPRESA?.slug || window.KRJ_EMPRESA?.codigo || "default");
+const KRJ_CATALOG_KEY = `${KRJ_CATALOG_EMPRESA}:${KRJ_CATALOG_RELEASE}`;
+
+let localCatalogRows = null;
+let localCatalogPromise = null;
+let localCatalogFailed = false;
+
+function openCatalogDB() {
+    return new Promise((resolve, reject) => {
+        if (!("indexedDB" in window)) return reject(new Error("IndexedDB indisponível"));
+        const req = indexedDB.open(KRJ_CATALOG_DB, 1);
+        req.onupgradeneeded = () => {
+            const db = req.result;
+            if (!db.objectStoreNames.contains(KRJ_CATALOG_STORE)) {
+                db.createObjectStore(KRJ_CATALOG_STORE, {keyPath: "key"});
+            }
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error("Falha ao abrir IndexedDB"));
+    });
+}
+
+async function idbGetCatalog(key) {
+    const db = await openCatalogDB();
+    try {
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction(KRJ_CATALOG_STORE, "readonly");
+            const req = tx.objectStore(KRJ_CATALOG_STORE).get(key);
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error);
+        });
+    } finally {
+        db.close();
+    }
+}
+
+async function idbPutCatalog(entry) {
+    const db = await openCatalogDB();
+    try {
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(KRJ_CATALOG_STORE, "readwrite");
+            tx.objectStore(KRJ_CATALOG_STORE).put(entry);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error("Gravação abortada"));
+        });
+    } finally {
+        db.close();
+    }
+}
+
+function compactRowToSong(r) {
+    return {
+        code: r?.[0] ?? 0,
+        title: r?.[1] ?? "",
+        singer: r?.[2] ?? "",
+        snippet: r?.[3] ?? "",
+        package: r?.[4] ?? "",
+        type: r?.[5] ?? "",
+        duplicated: !!r?.[6],
+        availability: r?.[4] ?? "",
+    };
+}
+
+async function ensureLocalCatalog() {
+    if (localCatalogRows) return localCatalogRows;
+    if (localCatalogFailed) throw new Error("Catálogo local indisponível");
+    if (localCatalogPromise) return localCatalogPromise;
+
+    localCatalogPromise = (async () => {
+        try {
+            const cached = await idbGetCatalog(KRJ_CATALOG_KEY);
+            if (cached?.items?.length) {
+                localCatalogRows = cached.items;
+                return localCatalogRows;
+            }
+
+            const url = `/api/catalog/snapshot?release=${encodeURIComponent(KRJ_CATALOG_RELEASE)}`;
+            const res = await fetch(url, {headers: {Accept: "application/json"}});
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            if (!Array.isArray(data.items)) throw new Error("Snapshot inválido");
+
+            localCatalogRows = data.items;
+            // Guarda em segundo plano. Se a gravação falhar, a consulta desta sessão continua.
+            try {
+                await idbPutCatalog({
+                    key: KRJ_CATALOG_KEY,
+                    release: KRJ_CATALOG_RELEASE,
+                    savedAt: Date.now(),
+                    items: data.items,
+                });
+            } catch (e) {
+                console.warn("Não foi possível persistir o catálogo local:", e);
+            }
+            return localCatalogRows;
+        } catch (e) {
+            localCatalogFailed = true;
+            console.warn("Catálogo local indisponível; usando /api/search como fallback:", e);
+            throw e;
+        } finally {
+            localCatalogPromise = null;
+        }
+    })();
+
+    return localCatalogPromise;
+}
+
+function normSearchText(value) {
+    return String(value || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+}
+
+async function localSearchCatalog({q = "", tipo = null, plano = null, letter = null, limit = 60, offset = 0} = {}) {
+    const rows = await ensureLocalCatalog();
+    const qRaw = String(q || "").trim();
+    const qNorm = normSearchText(qRaw);
+    const codeNum = /^\d+$/.test(qRaw) ? Number(qRaw) : null;
+    const tipoNorm = String(tipo || "").trim().toUpperCase();
+    const planoNorm = String(plano || "").trim().toUpperCase();
+    const letterNorm = String(letter || "").trim().toUpperCase();
+    const useLetter = /^[A-Z]$/.test(letterNorm); // mantém o comportamento atual: # = sem filtro
+
+    const matched = [];
+    for (const r of rows) {
+        const code = Number(r?.[0] || 0);
+        const title = String(r?.[1] || "");
+        const singer = String(r?.[2] || "");
+        const snippet = String(r?.[3] || "");
+        const pack = String(r?.[4] || "").toUpperCase();
+        const type = String(r?.[5] || "").toUpperCase();
+
+        if (tipoNorm && type !== tipoNorm) continue;
+        if (planoNorm === "BASICO" && pack !== "BASICO") continue;
+
+        if (useLetter) {
+            const first = normSearchText(singer).charAt(0).toUpperCase();
+            if (first !== letterNorm) continue;
+        }
+
+        if (qNorm) {
+            const textMatch =
+                normSearchText(title).includes(qNorm) ||
+                normSearchText(singer).includes(qNorm) ||
+                normSearchText(snippet).includes(qNorm);
+            const codeMatch = codeNum !== null && code === codeNum;
+            if (!textMatch && !codeMatch) continue;
+        }
+
+        matched.push(r);
+    }
+
+    const total = matched.length;
+    const page = matched.slice(offset, offset + limit).map(compactRowToSong);
+    return {items: page, total};
+}
+
+// Começa a preparar o catálogo assim que a tela de consulta abre.
+// Na primeira visita baixa uma vez; nas próximas lê do IndexedDB.
+ensureLocalCatalog().catch(() => {});
+
+// ==========================================================
 // Helpers texto / UI
 // ==========================================================
 function esc(s) {
@@ -1083,9 +1252,14 @@ async function ensureCatalogTotalAll() {
         if (tipo) url += `&tipo=${encodeURIComponent(tipo)}`;
         if (plano) url += `&plano=${encodeURIComponent(plano)}`;
 
-        const res = await fetch(url, {headers: {Accept: "application/json"}, cache: "no-store"});
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        let data;
+        try {
+            data = await localSearchCatalog({q: "", tipo, plano, letter: null, limit: 1, offset: 0});
+        } catch (_) {
+            const res = await fetch(url, {headers: {Accept: "application/json"}, cache: "no-store"});
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            data = await res.json();
+        }
 
         const total = (typeof data.total === "number") ? data.total : null;
         catalogTotalAll = total;
@@ -1147,9 +1321,19 @@ async function doSearch(reset = true, opts = {}) {
     paging.loading = true;
 
     try {
-        const res = await fetch(url, {headers: {Accept: "application/json"}, cache: "no-store"});
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        let data;
+        try {
+            // Consulta local: não gasta banda a cada pesquisa.
+            data = await localSearchCatalog({
+                q, tipo, plano, letter: paging.letter,
+                limit: paging.limit, offset: paging.offset
+            });
+        } catch (_) {
+            // Segurança: se IndexedDB/snapshot falhar, mantém o catálogo funcionando como antes.
+            const res = await fetch(url, {headers: {Accept: "application/json"}, cache: "no-store"});
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            data = await res.json();
+        }
 
         const items = data.items || [];
         const total = typeof data.total === "number" ? data.total : null;

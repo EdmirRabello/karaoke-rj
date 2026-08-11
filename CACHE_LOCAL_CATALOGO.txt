@@ -1,0 +1,16 @@
+CACHE LOCAL DO CATÁLOGO - 2026-08-11
+
+Implementado somente na CONSULTA do catálogo:
+- Primeiro acesso baixa /api/catalog/snapshot?release=<catalogo_release>.
+- O snapshot é comprimido pelo GZipMiddleware e salvo no IndexedDB do navegador.
+- Pesquisas, filtros, A-Z, total e paginação usam os dados locais.
+- Favoritos, Top 30, pedidos, fila, monitor e demais recursos continuam online.
+- /api/search foi mantida como fallback automático se IndexedDB/snapshot falhar.
+- Quando catalogo_release mudar, o navegador usa uma nova chave e baixa o catálogo atualizado uma única vez.
+
+Painel oculto de banda já incluído:
+/_krj/uso/7f29c4b8
+
+Environment na Render:
+RENDER_API_KEY=<sua chave>
+Opcional: RENDER_SERVICE_ID=srv-d6194jpr0fns73fm59fg

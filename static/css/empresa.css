@@ -1,0 +1,700 @@
+/* ===========================================================
+   KRJ EMPRESA / WHITE LABEL
+   Arquivo isolado: popup, redes sociais e landing da empresa.
+   Não altera o layout do catálogo.
+   =========================================================== */
+
+:root{
+    --empresa-purple:#6d35ff;
+    --empresa-purple-2:#9b6cff;
+    --empresa-gold:#f3b000;
+    --empresa-dark:#080916;
+    --empresa-text:#090b18;
+    --empresa-muted:#5d6275;
+    --empresa-whatsapp:#10b83f;
+}
+
+/* ===========================================================
+   POPUP EMPRESA
+   =========================================================== */
+
+.empresa-popup{
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    pointer-events:none;
+    transition:.25s ease;
+}
+
+.empresa-popup.is-open{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.empresa-popup__overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.68);
+    backdrop-filter:blur(5px);
+}
+
+.empresa-popup__card{
+    position:relative;
+    width:min(94vw,560px);
+    max-height:92vh;
+    overflow:auto;
+    background:
+        radial-gradient(circle at 18% 22%, rgba(109,53,255,.11), transparent 25%),
+        radial-gradient(circle at 82% 28%, rgba(155,108,255,.10), transparent 24%),
+        linear-gradient(180deg,#fff 0%,#fbfbff 100%);
+    color:var(--empresa-text);
+    border-radius:28px;
+    padding:34px 32px 28px;
+    text-align:center;
+    box-shadow:0 24px 85px rgba(0,0,0,.38);
+    z-index:2;
+    border:1px solid rgba(255,255,255,.75);
+}
+
+.empresa-popup__card::before{
+    content:"";
+    position:absolute;
+    left:-12%;
+    right:-12%;
+    top:250px;
+    height:145px;
+    background:
+        linear-gradient(135deg, rgba(109,53,255,.10), rgba(155,108,255,.04));
+    border-radius:50%;
+    transform:rotate(-4deg);
+    pointer-events:none;
+}
+
+.empresa-popup__card::after{
+    content:"";
+    position:absolute;
+    right:-80px;
+    top:190px;
+    width:220px;
+    height:220px;
+    background:radial-gradient(circle, rgba(109,53,255,.18) 0 2px, transparent 3px);
+    background-size:13px 13px;
+    opacity:.45;
+    pointer-events:none;
+}
+
+.empresa-popup__close{
+    position:absolute;
+    right:16px;
+    top:16px;
+    width:52px;
+    height:52px;
+    border:none;
+    border-radius:50%;
+    background:#fff;
+    color:#111;
+    font-size:26px;
+    line-height:1;
+    cursor:pointer;
+    box-shadow:0 12px 35px rgba(0,0,0,.18);
+    z-index:5;
+}
+
+.empresa-popup__decor{
+    position:absolute;
+    color:rgba(109,53,255,.45);
+    font-weight:900;
+    pointer-events:none;
+    z-index:1;
+}
+
+.decor-1{
+    left:48px;
+    top:130px;
+    font-size:44px;
+    transform:rotate(-15deg);
+}
+
+.decor-2{
+    right:48px;
+    top:190px;
+    font-size:34px;
+    transform:rotate(12deg);
+}
+
+.decor-3{
+    left:74%;
+    top:72px;
+    font-size:24px;
+}
+
+.empresa-popup__microfone{
+    width:54px;
+    height:54px;
+    margin:0 auto -4px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--empresa-purple);
+    font-size:42px;
+    transform:rotate(-28deg);
+    filter:drop-shadow(0 10px 18px rgba(109,53,255,.24));
+    position:relative;
+    z-index:2;
+}
+
+.empresa-popup__title{
+    position:relative;
+    z-index:2;
+    font-size:48px;
+    line-height:1;
+    margin:8px 0 12px;
+    color:var(--empresa-dark);
+    font-weight:950;
+    letter-spacing:-1.5px;
+    text-shadow:0 8px 20px rgba(0,0,0,.08);
+}
+
+.empresa-popup__title::after{
+    content:"";
+    display:block;
+    width:92px;
+    height:5px;
+    margin:12px auto 0;
+    border-radius:999px;
+    background:linear-gradient(90deg,var(--empresa-purple),var(--empresa-purple-2));
+}
+
+.empresa-popup__subtitle{
+    position:relative;
+    z-index:2;
+    color:var(--empresa-text);
+    font-size:18px;
+    font-weight:700;
+    margin:0 auto 22px;
+}
+
+.empresa-popup__subtitle strong{
+    color:var(--empresa-purple);
+    font-weight:950;
+}
+
+.empresa-popup__logo-wrap{
+    position:relative;
+    z-index:2;
+    width:235px;
+    height:235px;
+    margin:12px auto 26px;
+    border-radius:50%;
+    background:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:3px solid rgba(109,53,255,.40);
+    overflow:hidden;
+    box-shadow:
+        0 0 0 8px rgba(109,53,255,.04),
+        0 18px 48px rgba(109,53,255,.18);
+}
+
+.empresa-popup__logo{
+    width:205px;
+    height:205px;
+    object-fit:contain;
+}
+
+.empresa-popup__msg{
+    position:relative;
+    z-index:2;
+    font-size:20px;
+    line-height:1.45;
+    margin:18px 0 22px;
+    color:#22263a;
+}
+
+.empresa-popup__msg strong{
+    color:var(--empresa-purple);
+}
+
+.empresa-popup__social-title{
+    position:relative;
+    z-index:2;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    margin:10px 0 10px;
+    color:var(--empresa-text);
+    font-size:19px;
+}
+
+.empresa-popup__social-title span{
+    width:54px;
+    height:3px;
+    border-radius:999px;
+    background:linear-gradient(90deg, transparent, var(--empresa-purple));
+}
+
+.empresa-popup__social-title span:last-child{
+    background:linear-gradient(90deg, var(--empresa-purple), transparent);
+}
+
+.empresa-popup__social-title b{
+    font-weight:950;
+}
+
+.empresa-popup__social-title i{
+    color:var(--empresa-purple);
+    margin-right:6px;
+}
+
+.empresa-popup__social-box{
+    position:relative;
+    z-index:2;
+    background:rgba(255,255,255,.90);
+    border-radius:22px;
+    padding:16px 12px;
+    box-shadow:
+        0 16px 44px rgba(18,18,38,.12),
+        inset 0 0 0 1px rgba(0,0,0,.04);
+    margin-bottom:22px;
+    overflow:hidden;
+}
+
+.empresa-popup__socials{
+    display:flex;
+    justify-content:center;
+    gap:0;
+    flex-wrap:nowrap;
+}
+
+.empresa-social{
+    width:78px;
+    min-width:68px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    color:#111;
+    text-decoration:none;
+    background:transparent;
+    border:0;
+    cursor:pointer;
+    transition:.25s ease;
+    font-size:0;
+    position:relative;
+}
+
+.empresa-social:not(:last-child){
+    border-right:1px solid rgba(0,0,0,.08);
+}
+
+.empresa-social i{
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:29px;
+    color:#fff;
+    box-shadow:0 10px 22px rgba(0,0,0,.16);
+}
+
+.empresa-social::after{
+    font-size:13px;
+    color:#1d2030;
+    font-weight:650;
+    line-height:1;
+}
+
+.empresa-social:hover{
+    transform:translateY(-4px);
+}
+
+.empresa-social--instagram i{
+    background:radial-gradient(circle at 30% 110%, #ffd76b 0 18%, #f77737 32%, #e1306c 55%, #833ab4 100%);
+}
+
+.empresa-social--facebook i{
+    background:linear-gradient(180deg,#2f70d8,#15428f);
+}
+
+.empresa-social--youtube i{
+    background:linear-gradient(180deg,#ff2d2d,#c90000);
+}
+
+.empresa-social--site i{
+    background:linear-gradient(180deg,#fff,#eeeeee);
+    color:#111;
+}
+
+.empresa-social--whatsapp i{
+    background:linear-gradient(180deg,#29d842,#0a9d28);
+}
+
+.empresa-social--tiktok i{
+    background:linear-gradient(180deg,#111,#333);
+}
+
+.empresa-social--share i{
+    background:linear-gradient(180deg,#8f63ff,#5d28d9);
+}
+
+.empresa-popup__acoes{
+    position:relative;
+    z-index:2;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    margin-top:22px;
+}
+
+.empresa-popup__about{
+    position:relative;
+    overflow:hidden;
+    width:100%;
+    border:2px solid var(--empresa-gold);
+    background:linear-gradient(180deg,#fffef8,#fff7df);
+    color:#090b18;
+    padding:22px 54px 22px 70px;
+    border-radius:22px;
+    font-size:22px;
+    line-height:1.25;
+    font-weight:950;
+    cursor:pointer;
+    transition:.30s ease;
+    box-shadow:
+        0 0 0 2px rgba(255,215,80,.20),
+        0 14px 35px rgba(184,125,0,.18);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    text-align:center;
+}
+
+.empresa-popup__about-icon{
+    flex:0 0 auto;
+    font-size:34px;
+    filter:drop-shadow(0 5px 10px rgba(184,125,0,.22));
+}
+
+.empresa-popup__about::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:-120%;
+    width:60%;
+    height:100%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.95), transparent);
+    transform:skewX(-25deg);
+    animation:krjEmpresaShine 3.8s infinite;
+}
+
+.empresa-popup__about::after{
+    content:"NOVO";
+    position:absolute;
+    top:12px;
+    right:-30px;
+    width:104px;
+    background:#f22626;
+    color:#fff;
+    font-size:13px;
+    font-weight:950;
+    padding:6px 0;
+    transform:rotate(45deg);
+    box-shadow:0 4px 10px rgba(0,0,0,.25);
+}
+
+.empresa-popup__about:hover{
+    transform:translateY(-3px);
+    box-shadow:
+        0 0 0 2px rgba(255,215,80,.42),
+        0 20px 48px rgba(184,125,0,.28);
+}
+
+.empresa-popup__features{
+    margin:8px auto 4px;
+    color:#4d5265;
+    font-size:15px;
+    line-height:1.55;
+    text-align:center;
+}
+
+.empresa-popup__features::before{
+    content:"♫";
+    color:var(--empresa-purple);
+    font-weight:950;
+    margin-right:8px;
+}
+
+.empresa-popup__features::after{
+    content:"";
+}
+
+.empresa-popup__continue{
+    margin-top:12px;
+    border:none;
+    background:linear-gradient(135deg,#080916,#15122e 70%,#2d126c);
+    color:#fff;
+    padding:21px 35px;
+    border-radius:20px;
+    font-size:23px;
+    font-weight:950;
+    cursor:pointer;
+    box-shadow:
+        0 15px 34px rgba(0,0,0,.28),
+        0 0 26px rgba(109,53,255,.25);
+    transition:.25s ease;
+}
+
+.empresa-popup__continue:hover{
+    transform:translateY(-2px);
+    box-shadow:
+        0 18px 42px rgba(0,0,0,.32),
+        0 0 34px rgba(109,53,255,.35);
+}
+
+/* ===========================================================
+   LANDING DA EMPRESA
+   Mantém as classes antigas krj-connect-modal para não quebrar o JS.
+   =========================================================== */
+
+.krj-connect-modal{
+    position:fixed;
+    inset:0;
+    z-index:100000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    pointer-events:none;
+    transition:.25s ease;
+}
+
+.krj-connect-modal.is-open{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.krj-connect-modal__overlay{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.72);
+    backdrop-filter:blur(5px);
+}
+
+.krj-connect-modal__card{
+    position:relative;
+    z-index:2;
+    width:min(92vw,560px);
+    max-height:92vh;
+    overflow:hidden;
+    background:#fff;
+    color:#111;
+    border-radius:24px;
+    padding:0;
+    text-align:center;
+    box-shadow:0 25px 80px rgba(0,0,0,.45);
+}
+
+.krj-connect-modal__close{
+    position:absolute;
+    right:12px;
+    top:12px;
+    width:46px;
+    height:46px;
+    z-index:5;
+    border:none;
+    border-radius:50%;
+    background:#fff;
+    color:#111;
+    font-size:24px;
+    line-height:1;
+    cursor:pointer;
+    box-shadow:0 12px 35px rgba(0,0,0,.20);
+}
+
+.krj-connect-modal__body{
+    height:auto;
+    max-height:calc(92vh - 104px);
+    overflow:auto;
+    background:#fff;
+}
+
+.krj-connect-modal__banner{
+    display:block;
+    width:100%;
+    height:auto;
+    border-radius:0;
+    margin:0;
+}
+
+.krj-connect-modal__footer{
+    min-height:104px;
+    background:#fff;
+    padding:16px;
+    box-shadow:0 -10px 25px rgba(0,0,0,.12);
+}
+
+.krj-connect-modal__cta{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+    min-height:64px;
+    background:var(--empresa-whatsapp);
+    color:#fff;
+    text-decoration:none;
+    border-radius:18px;
+    font-size:20px;
+    font-weight:900;
+    box-shadow:0 14px 35px rgba(0,0,0,.28);
+}
+
+/* ===========================================================
+   MOBILE
+   =========================================================== */
+
+@media (max-width:520px){
+    .empresa-popup__card{
+        width:100vw;
+        min-height:100vh;
+        max-height:100vh;
+        border-radius:0;
+        padding:28px 18px 24px;
+    }
+
+    .empresa-popup__close{
+        right:14px;
+        top:14px;
+        width:46px;
+        height:46px;
+    }
+
+    .empresa-popup__microfone{
+        font-size:34px;
+        width:44px;
+        height:44px;
+    }
+
+    .empresa-popup__title{
+        font-size:40px;
+        margin-top:4px;
+    }
+
+    .empresa-popup__subtitle{
+        font-size:15px;
+        margin-bottom:18px;
+    }
+
+    .empresa-popup__logo-wrap{
+        width:215px;
+        height:215px;
+        margin-bottom:22px;
+    }
+
+    .empresa-popup__logo{
+        width:190px;
+        height:190px;
+    }
+
+    .empresa-popup__msg{
+        font-size:16px;
+        margin:12px 0 18px;
+    }
+
+    .empresa-popup__social-title{
+        font-size:17px;
+        gap:10px;
+    }
+
+    .empresa-popup__social-title span{
+        width:38px;
+    }
+
+    .empresa-popup__social-box{
+        padding:13px 6px;
+        border-radius:20px;
+        overflow-x:auto;
+    }
+s
+    .empresa-popup__socials{
+        justify-content:flex-start;
+        min-width:max-content;
+    }
+
+    .empresa-social{
+        width:20%;
+        min-width:0;
+    }
+
+    .empresa-social i{
+        width:49px;
+        height:49px;
+        font-size:25px;
+    }
+
+    .empresa-social::after{
+        font-size:12px;
+    }
+
+    .empresa-popup__about{
+        font-size:17px;
+        padding:18px 42px 18px 54px;
+        border-radius:18px;
+    }
+
+    .empresa-popup__about-icon{
+        font-size:25px;
+    }
+
+    .empresa-popup__features{
+        font-size:13px;
+    }
+
+    .empresa-popup__continue{
+        font-size:18px;
+        padding:17px 20px;
+        border-radius:16px;
+    }
+
+    .decor-1{
+        left:20px;
+        top:120px;
+        font-size:34px;
+    }
+
+    .decor-2{
+        right:20px;
+        top:190px;
+        font-size:28px;
+    }
+
+    .krj-connect-modal__card{
+        width:100vw;
+        height:100vh;
+        max-height:100vh;
+        border-radius:0;
+    }
+
+    .krj-connect-modal__body{
+        max-height:calc(100vh - 104px);
+    }
+}
+
+/* ===========================================================
+   ANIMAÇÕES
+   =========================================================== */
+
+@keyframes krjEmpresaShine{
+    0%{ left:-120%; }
+    45%{ left:140%; }
+    100%{ left:140%; }
+}

@@ -4,6 +4,18 @@
 
 {% block page_css %}
 <link rel="stylesheet" href="{{ request.url_for('static', path='css/catalog.css') }}?v={{ ASSET_V }}">
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/empresa.css') }}?v={{ ASSET_V }}">
+{% endblock %}
+
+{% block head_extra %}
+<style>
+:root{
+    --brand: {{ EMPRESA.tema.cores.brand }};
+    --brand-2: {{ EMPRESA.tema.cores.brand_2 }};
+    --brand-dark: {{ EMPRESA.tema.cores.brand_dark }};
+    --brand-accent: {{ EMPRESA.tema.cores.accent }};
+}
+</style>
 {% endblock %}
 
 {% block content %}
@@ -12,7 +24,7 @@
 <header class="k-header">
     <div class="k-container k-header__inner">
 
-        <a class="k-brand" href="/">
+        <a class="k-brand" href="{{ EMPRESA.url_portal or '/' }}">
             <img src="{{ request.url_for('static', path='img/cantus_logo.png') }}?v={{ ASSET_V }}"
                  alt="Logo Karaokê RJ"
                  loading="lazy" decoding="async">
@@ -26,11 +38,11 @@
 
             <!-- DESKTOP: botões no topo (canto direito) -->
             <div class="deskbar" aria-label="Atalhos do catálogo">
-                <a class="deskbar__item" href="/" aria-label="Início">
+                <a class="deskbar__item" href="{{ EMPRESA.url_portal or '/' }}" aria-label="Início">
                     <i class="bi bi-house-door-fill"></i><span>Início</span>
                 </a>
 
-                <a class="deskbar__item" href="/catalogo" aria-label="Catálogo" id="btnCatalogDesk">
+                <a class="deskbar__item" href="{{ EMPRESA.url_catalogo or '/catalogo' }}" aria-label="Catálogo" id="btnCatalogDesk">
                     <i class="bi bi-music-note-list"></i><span>Catálogo</span>
                 </a>
 
@@ -227,6 +239,11 @@
     </button>
 </nav>
 
+<script>
+    window.KRJ_EMPRESA = {{ EMPRESA | tojson }};
+</script>
+
+<script src="{{ request.url_for('static', path='js/empresa.js') }}?v={{ ASSET_V }}" defer></script>
 <script src="{{ request.url_for('static', path='js/catalog.js') }}?v={{ ASSET_V }}" defer></script>
 
 <!-- =========================================================

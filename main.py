@@ -2,16 +2,21 @@ from __future__ import annotations
 
 import os
 import time
+import json
+import urllib.parse
+import urllib.request
+from collections import defaultdict
 from pathlib import Path
 from typing import Optional, List, Any
 
 from fastapi import FastAPI, Query, Request
-from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from empresas import obter_empresa, empresa_tem_catalogo
 
 from db import init_db, fetchall, fetchone_value, execute, DB_KIND, DB_PATH
 
@@ -50,6 +55,135 @@ def service_worker_static():
 # Templates (pages)
 # ============================================================
 templates = Jinja2Templates(directory="templates")
+
+
+# ============================================================
+# PAINEL OCULTO DE CONSUMO DA RENDER
+# - Sem link no sistema e sem senha, conforme solicitado.
+# - A API key fica SOMENTE no servidor em RENDER_API_KEY.
+# ============================================================
+RENDER_SERVICE_ID = os.getenv("RENDER_SERVICE_ID", "srv-d6194jpr0fns73fm59fg")
+RENDER_API_KEY = os.getenv("RENDER_API_KEY", "").strip()
+RENDER_FREE_BANDWIDTH_GB = float(os.getenv("RENDER_FREE_BANDWIDTH_GB", "5"))
+BANDWIDTH_ADMIN_PATH = "/_krj/uso/7f29c4b8"
+BRAZIL_TZ = timezone(timedelta(hours=-3))
+
+
+def _render_bandwidth_series(start_utc: datetime, end_utc: datetime):
+    if not RENDER_API_KEY:
+        raise RuntimeError("RENDER_API_KEY não configurada no Render")
+
+    params = urllib.parse.urlencode({
+        "startTime": start_utc.isoformat().replace("+00:00", "Z"),
+        "endTime": end_utc.isoformat().replace("+00:00", "Z"),
+        "resource": RENDER_SERVICE_ID,
+    })
+    url = f"https://api.render.com/v1/metrics/bandwidth-sources?{params}"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {RENDER_API_KEY}",
+            "Accept": "application/json",
+            "User-Agent": "KaraokeRJ-Bandwidth-Panel/1.0",
+        },
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def _build_bandwidth_report():
+    now_local = datetime.now(BRAZIL_TZ)
+    month_start_local = now_local.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    start_utc = month_start_local.astimezone(timezone.utc)
+    end_utc = now_local.astimezone(timezone.utc)
+
+    series = _render_bandwidth_series(start_utc, end_utc)
+    daily = defaultdict(lambda: {"http": 0.0, "nat": 0.0, "websocket": 0.0, "privatelink": 0.0, "total": 0.0})
+    source_totals = defaultdict(float)
+
+    for item in series or []:
+        labels = {x.get("field"): x.get("value") for x in item.get("labels", [])}
+        source = (labels.get("trafficSource") or "").lower()
+        if source == "total":
+            # O total retornado pela API já soma as origens; usamos apenas as origens
+            # para evitar contagem em dobro no relatório.
+            continue
+        for point in item.get("values", []) or []:
+            ts = point.get("timestamp")
+            try:
+                dt = datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(BRAZIL_TZ)
+                mb = float(point.get("value") or 0)
+            except Exception:
+                continue
+            key = dt.strftime("%Y-%m-%d")
+            daily[key][source] += mb
+            daily[key]["total"] += mb
+            source_totals[source] += mb
+
+    rows = []
+    cur = month_start_local.date()
+    today = now_local.date()
+    while cur <= today:
+        key = cur.isoformat()
+        d = daily[key]
+        rows.append({
+            "date": cur.strftime("%d/%m"),
+            "iso": key,
+            "http_mb": d["http"],
+            "nat_mb": d["nat"],
+            "other_mb": d["websocket"] + d["privatelink"],
+            "total_mb": d["total"],
+        })
+        cur += timedelta(days=1)
+
+    total_mb = sum(r["total_mb"] for r in rows)
+    http_mb = source_totals.get("http", 0.0)
+    nat_mb = source_totals.get("nat", 0.0)
+    free_mb = RENDER_FREE_BANDWIDTH_GB * 1024
+    over_mb = max(0.0, total_mb - free_mb)
+    over_cost_usd = (over_mb / 1024) * 0.15
+    max_day_mb = max([r["total_mb"] for r in rows] + [1.0])
+    for r in rows:
+        r["pct"] = min(100.0, (r["total_mb"] / max_day_mb) * 100.0)
+
+    elapsed_days = max(1, now_local.day)
+    days_in_month = ((month_start_local.replace(month=month_start_local.month % 12 + 1, day=1) if month_start_local.month < 12 else month_start_local.replace(year=month_start_local.year + 1, month=1, day=1)) - month_start_local).days
+    projection_mb = (total_mb / elapsed_days) * days_in_month
+
+    return {
+        "now": now_local.strftime("%d/%m/%Y %H:%M"),
+        "month_label": now_local.strftime("%m/%Y"),
+        "rows": rows,
+        "total_mb": total_mb,
+        "http_mb": http_mb,
+        "nat_mb": nat_mb,
+        "free_mb": free_mb,
+        "over_mb": over_mb,
+        "over_cost_usd": over_cost_usd,
+        "projection_mb": projection_mb,
+    }
+
+
+@app.get(BANDWIDTH_ADMIN_PATH, response_class=HTMLResponse, include_in_schema=False)
+def bandwidth_admin(request: Request):
+    error = None
+    report = None
+    try:
+        report = _build_bandwidth_report()
+    except Exception as exc:
+        error = str(exc)
+    return templates.TemplateResponse(
+        request=request,
+        name="bandwidth_admin.html",
+        context={
+            "ASSET_V": ASSET_V,
+            "REPORT": report,
+            "ERROR": error,
+            "ADMIN_PATH": BANDWIDTH_ADMIN_PATH,
+            "SERVICE_ID": RENDER_SERVICE_ID,
+            "FREE_GB": RENDER_FREE_BANDWIDTH_GB,
+        },
+    )
 
 
 # ============================================================
@@ -185,6 +319,176 @@ def normalizar_codigo_5(codigo: int | str) -> int:
         return 0
     return c
 
+# ============================================================
+# ✅ KRJ Connect - Empresas e Máquinas
+# ============================================================
+def _try_execute(sql: str, params=None):
+    try:
+        execute(sql, params or [])
+    except Exception as e:
+        print("WARN SQL ignorado:", e, "|", sql.strip()[:120])
+
+
+def init_empresas():
+    """Cria e migra a tabela de empresas do KRJ Connect."""
+    if DB_KIND == "postgres":
+        execute("""
+        CREATE TABLE IF NOT EXISTS empresas (
+            id SERIAL PRIMARY KEY,
+            dominio TEXT UNIQUE NOT NULL,
+            nome TEXT NOT NULL,
+            slug TEXT UNIQUE NOT NULL,
+            titulo_popup TEXT,
+            mensagem_popup TEXT,
+            redes TEXT,
+            config TEXT,
+            ativo INTEGER DEFAULT 1,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        extras = [
+            "ALTER TABLE empresas ADD COLUMN IF NOT EXISTS tema TEXT DEFAULT 'krj'",
+            "ALTER TABLE empresas ADD COLUMN IF NOT EXISTS perfil TEXT DEFAULT 'catalogo'",
+            "ALTER TABLE empresas ADD COLUMN IF NOT EXISTS catalogo_nivel TEXT DEFAULT 'PLUS'",
+            "ALTER TABLE empresas ADD COLUMN IF NOT EXISTS catalogo_release INTEGER DEFAULT 202606",
+            "ALTER TABLE empresas ADD COLUMN IF NOT EXISTS modulos TEXT",
+            "ALTER TABLE empresas ADD COLUMN IF NOT EXISTS portal TEXT",
+        ]
+        for sql in extras:
+            _try_execute(sql)
+
+    else:
+        execute("""
+        CREATE TABLE IF NOT EXISTS empresas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            dominio TEXT UNIQUE NOT NULL,
+            nome TEXT NOT NULL,
+            slug TEXT UNIQUE NOT NULL,
+            titulo_popup TEXT,
+            mensagem_popup TEXT,
+            redes TEXT,
+            config TEXT,
+            ativo INTEGER DEFAULT 1,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+        extras = [
+            "ALTER TABLE empresas ADD COLUMN tema TEXT DEFAULT 'krj'",
+            "ALTER TABLE empresas ADD COLUMN perfil TEXT DEFAULT 'catalogo'",
+            "ALTER TABLE empresas ADD COLUMN catalogo_nivel TEXT DEFAULT 'PLUS'",
+            "ALTER TABLE empresas ADD COLUMN catalogo_release INTEGER DEFAULT 202606",
+            "ALTER TABLE empresas ADD COLUMN modulos TEXT",
+            "ALTER TABLE empresas ADD COLUMN portal TEXT",
+        ]
+        for sql in extras:
+            _try_execute(sql)
+
+
+def init_maquinas():
+    """Máquinas são o contexto do QR, fila online, nível e release do cliente CPF/empresa."""
+    if DB_KIND == "postgres":
+        execute("""
+        CREATE TABLE IF NOT EXISTS maquinas (
+            codigo TEXT PRIMARY KEY,
+            empresa_slug TEXT DEFAULT 'karaokerj',
+            cliente_tipo TEXT DEFAULT 'CPF',
+            catalogo_nivel TEXT DEFAULT 'PLUS',
+            catalogo_release INTEGER DEFAULT 202606,
+            fila_online INTEGER DEFAULT 1,
+            ativo INTEGER DEFAULT 1,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+    else:
+        execute("""
+        CREATE TABLE IF NOT EXISTS maquinas (
+            codigo TEXT PRIMARY KEY,
+            empresa_slug TEXT DEFAULT 'karaokerj',
+            cliente_tipo TEXT DEFAULT 'CPF',
+            catalogo_nivel TEXT DEFAULT 'PLUS',
+            catalogo_release INTEGER DEFAULT 202606,
+            fila_online INTEGER DEFAULT 1,
+            ativo INTEGER DEFAULT 1,
+            criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+
+# ============================================================
+# ✅ Empresas padrão / demonstração
+# ============================================================
+def _empresa_existe(slug: str) -> bool:
+    total = int(fetchone_value(
+        "SELECT COUNT(*) FROM empresas WHERE LOWER(slug) = ?",
+        [slug.lower()],
+        default=0
+    ) or 0)
+    return total > 0
+
+
+def criar_empresa_padrao():
+    """Garante a Karaokê RJ e a primeira empresa demo do KRJ Connect."""
+
+    if not _empresa_existe("karaokerj"):
+        execute("""
+            INSERT INTO empresas
+            (dominio, nome, slug, titulo_popup, mensagem_popup, redes, config,
+             tema, perfil, catalogo_nivel, catalogo_release, modulos, portal, ativo)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, [
+            "www.karaokerj.com.br",
+            "Karaokê RJ",
+            "karaokerj",
+            "Karaokê RJ",
+            "Bem-vindo ao maior catálogo de karaokê do Brasil.",
+            '{"whatsapp":"5521996504516","instagram":"https://instagram.com/karaokerj","facebook":"","tiktok":"","youtube":"https://youtube.com/@karaokerj4569","site":"https://www.karaokerj.com.br"}',
+            '{"popup":true,"mostrar_logo":true}',
+            "krj",
+            "catalogo",
+            "PLUS",
+            202606,
+            '{"portal":true,"redes":true,"whatsapp":true,"pdf":true,"catalogo":true,"qr":true,"loja":true}',
+            '{"headline":"Karaokê RJ","subtitulo":"O maior catálogo de karaokê do Brasil.","botao_catalogo":"Entrar no catálogo","botao_whatsapp":"Falar no WhatsApp","pdf_url":""}',
+            1
+        ])
+
+    if not _empresa_existe("vivioke"):
+        execute("""
+            INSERT INTO empresas
+            (dominio, nome, slug, titulo_popup, mensagem_popup, redes, config,
+             tema, perfil, catalogo_nivel, catalogo_release, modulos, portal, ativo)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, [
+            "vivioke.eu.org",
+            "Vivi Okê",
+            "vivioke",
+            "Vivi Okê",
+            "Diversão, música e alegria para sua festa.",
+            '{"whatsapp":"5521996504516","instagram":"","facebook":"","tiktok":"","youtube":"","site":""}',
+            '{"popup":true,"mostrar_logo":true}',
+            "party",
+            "portal",
+            "BASICO",
+            202606,
+            '{"portal":true,"redes":true,"whatsapp":true,"pdf":true,"catalogo":false,"qr":false}',
+            '{"headline":"Vivi Okê","subtitulo":"Diversão, música e alegria para sua festa.","botao_whatsapp":"Solicitar orçamento","botao_pdf":"Ver PDF","pdf_url":""}',
+            1
+        ])
+
+
+def criar_maquina_demo():
+    total = int(fetchone_value(
+        "SELECT COUNT(*) FROM maquinas WHERE codigo = ?",
+        ["KRJ00022"],
+        default=0
+    ) or 0)
+    if total == 0:
+        execute("""
+            INSERT INTO maquinas
+            (codigo, empresa_slug, cliente_tipo, catalogo_nivel, catalogo_release, fila_online, ativo)
+            VALUES (?,?,?,?,?,?,?)
+        """, ["KRJ00022", "karaokerj", "CPF", "PLUS", 202606, 1, 1])
 
 # ============================================================
 # ✅ STARTUP (Render-safe)
@@ -196,7 +500,10 @@ def on_startup():
     init_db()
     init_fila_karaoke()
     init_fila_atual_monitor()
-
+    init_empresas()
+    init_maquinas()
+    criar_empresa_padrao()
+    criar_maquina_demo()
     excel_path = os.getenv("EXCEL_PATH", "banco.xlsx")
 
     try:
@@ -218,22 +525,62 @@ def on_startup():
 # ============================================================
 # PÁGINAS
 # ============================================================
+def render_portal(request: Request, empresa: dict):
+    return templates.TemplateResponse(
+        request=request,
+        name="portal.html",
+        context={"ASSET_V": ASSET_V, "EMPRESA": empresa}
+    )
+
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
+    empresa = obter_empresa(request)
+
+    # Domínio próprio de empresa cai direto no portal dela.
+    if not empresa.get("dominio_oficial", True):
+        return render_portal(request, empresa)
+
     return templates.TemplateResponse(
         request=request,
         name="home.html",
-        context={"ASSET_V": ASSET_V}
+        context={"ASSET_V": ASSET_V, "EMPRESA": empresa}
     )
 
 
 @app.get("/catalogo", response_class=HTMLResponse)
 async def catalogo(request: Request):
+    empresa = obter_empresa(request)
+
+    # Empresa sem módulo catálogo volta para o portal.
+    if not empresa_tem_catalogo(empresa):
+        return RedirectResponse(url=empresa.get("url_portal") or "/", status_code=302)
+
     return templates.TemplateResponse(
         request=request,
         name="catalogo.html",
-        context={"ASSET_V": ASSET_V}
+        context={"ASSET_V": ASSET_V, "EMPRESA": empresa}
     )
+
+
+@app.get("/{empresa_slug}/catalogo", response_class=HTMLResponse)
+async def catalogo_empresa(request: Request, empresa_slug: str):
+    empresa = obter_empresa(request, empresa_slug)
+
+    if not empresa_tem_catalogo(empresa):
+        return RedirectResponse(url=empresa.get("url_portal") or f"/{empresa_slug}", status_code=302)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="catalogo.html",
+        context={"ASSET_V": ASSET_V, "EMPRESA": empresa}
+    )
+
+
+@app.get("/{empresa_slug}", response_class=HTMLResponse)
+async def portal_empresa(request: Request, empresa_slug: str):
+    empresa = obter_empresa(request, empresa_slug)
+    return render_portal(request, empresa)
 
 
 # ============================================================
@@ -359,6 +706,62 @@ def search(
         "limit": limit, "offset": offset, "has_more": has_more,
         "items": rows
     }
+
+
+# ============================================================
+# SNAPSHOT LOCAL DO CATÁLOGO (somente para CONSULTA)
+# - O navegador baixa uma vez por catalogo_release e grava no IndexedDB.
+# - Busca, filtros, A-Z e paginação passam a acontecer localmente.
+# - Favoritos, fila, pedidos, monitor e demais APIs continuam online.
+# - /api/search continua existindo como fallback de segurança.
+# ============================================================
+@app.get("/api/catalog/snapshot")
+def catalog_snapshot(release: str = Query("", max_length=40)):
+    order_sql = (
+        "ORDER BY lower(singer) ASC, lower(title) ASC, code ASC"
+        if DB_KIND == "postgres"
+        else "ORDER BY singer COLLATE NOCASE ASC, title COLLATE NOCASE ASC, code ASC"
+    )
+    rows = fetchall(
+        f"""
+        SELECT code, title, singer, snippet, package, type, duplicated
+        FROM songs
+        {order_sql}
+        """,
+        [],
+    )
+
+    # Formato posicional reduz bastante o JSON transferido:
+    # [codigo, titulo, cantor, trecho, pacote, tipo, duplicada]
+    compact = [
+        [
+            int(r.get("code") or 0),
+            r.get("title") or "",
+            r.get("singer") or "",
+            r.get("snippet") or "",
+            r.get("package") or "",
+            r.get("type") or "",
+            bool(r.get("duplicated")),
+        ]
+        for r in rows
+    ]
+
+    payload = json.dumps(
+        {"release": release, "count": len(compact), "items": compact},
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+    # A URL muda quando catalogo_release muda. Por isso a versão atual
+    # pode ficar cacheada por muito tempo sem revalidar.
+    return Response(
+        content=payload,
+        media_type="application/json; charset=utf-8",
+        headers={
+            "Cache-Control": "public, max-age=31536000, immutable",
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 # ============================================================

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<title>Consumo Render • Karaokê RJ</title>
+<style>
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0b1020;color:#eef2ff}
+.wrap{max-width:1100px;margin:0 auto;padding:24px}.head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px}.head h1{font-size:24px;margin:0}.muted{color:#a7b0c5;font-size:13px}.btn{display:inline-block;padding:10px 14px;border-radius:10px;background:#fff;color:#111827;text-decoration:none;font-weight:700;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}.card{background:#141b2d;border:1px solid #27324b;border-radius:14px;padding:16px}.card .k{font-size:12px;color:#a7b0c5;text-transform:uppercase;letter-spacing:.05em}.card .v{font-size:26px;font-weight:800;margin-top:7px}.card .s{font-size:12px;color:#a7b0c5;margin-top:4px}.danger{color:#ff8b8b}.ok{color:#7de3ad}.warn{color:#ffd27a}
+.panel{background:#141b2d;border:1px solid #27324b;border-radius:14px;overflow:hidden}.panel h2{font-size:16px;margin:0;padding:16px 18px;border-bottom:1px solid #27324b}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:680px}th,td{padding:11px 14px;text-align:right;border-bottom:1px solid #202a40;font-size:13px}th{color:#a7b0c5;font-weight:600;background:#11182a;position:sticky;top:0}th:first-child,td:first-child{text-align:left}.bar{height:8px;background:#222c43;border-radius:999px;overflow:hidden;min-width:160px}.bar>i{display:block;height:100%;background:linear-gradient(90deg,#5b8cff,#8b5cf6);border-radius:999px}.error{padding:18px;border-radius:12px;background:#34191f;border:1px solid #6a2934;color:#ffb4be}.tip{margin-top:14px;color:#a7b0c5;font-size:12px;line-height:1.5}
+@media(max-width:820px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.head{align-items:flex-start}.card .v{font-size:22px}}@media(max-width:520px){.wrap{padding:14px}.grid{grid-template-columns:1fr}.head h1{font-size:20px}}
+</style>
+</head>
+<body><main class="wrap">
+<div class="head"><div><h1>Consumo de banda • Render</h1><div class="muted">Serviço {{ SERVICE_ID }}{% if REPORT %} • atualizado {{ REPORT.now }}{% endif %}</div></div><a class="btn" href="{{ ADMIN_PATH }}">Atualizar</a></div>
+{% if ERROR %}
+<div class="error"><b>Não foi possível consultar a Render.</b><br>{{ ERROR }}<div class="tip">Configure a variável <code>RENDER_API_KEY</code> no serviço da Render. A chave nunca é enviada ao navegador.</div></div>
+{% else %}
+{% set total_gb = REPORT.total_mb / 1024 %}{% set http_gb = REPORT.http_mb / 1024 %}{% set nat_gb = REPORT.nat_mb / 1024 %}{% set proj_gb = REPORT.projection_mb / 1024 %}
+<section class="grid">
+<div class="card"><div class="k">Total no mês</div><div class="v {% if total_gb > FREE_GB %}danger{% else %}ok{% endif %}">{{ '%.2f'|format(total_gb) }} GB</div><div class="s">franquia: {{ '%.0f'|format(FREE_GB) }} GB</div></div>
+<div class="card"><div class="k">HTTP Responses</div><div class="v">{{ '%.2f'|format(http_gb) }} GB</div><div class="s">catálogo e respostas ao cliente</div></div>
+<div class="card"><div class="k">Service-Initiated</div><div class="v">{{ '%.2f'|format(nat_gb) }} GB</div><div class="s">NAT / chamadas externas</div></div>
+<div class="card"><div class="k">Projeção do mês</div><div class="v warn">{{ '%.2f'|format(proj_gb) }} GB</div><div class="s">projeção simples pelo ritmo atual</div></div>
+</section>
+<section class="grid">
+<div class="card"><div class="k">Excedente</div><div class="v">{{ '%.2f'|format(REPORT.over_mb / 1024) }} GB</div><div class="s">acima dos {{ '%.0f'|format(FREE_GB) }} GB</div></div>
+<div class="card"><div class="k">Custo estimado excedente</div><div class="v">US$ {{ '%.2f'|format(REPORT.over_cost_usd) }}</div><div class="s">US$ 0,15 por GB excedente</div></div>
+</section>
+<section class="panel"><h2>Consumo por dia • {{ REPORT.month_label }}</h2><div class="table-wrap"><table><thead><tr><th>Dia</th><th>HTTP</th><th>Service</th><th>Outros</th><th>Total</th><th>Comparativo</th></tr></thead><tbody>
+{% for r in REPORT.rows|reverse %}<tr><td>{{ r.date }}</td><td>{{ '%.1f'|format(r.http_mb) }} MB</td><td>{{ '%.1f'|format(r.nat_mb) }} MB</td><td>{{ '%.1f'|format(r.other_mb) }} MB</td><td><b>{{ '%.1f'|format(r.total_mb) }} MB</b></td><td><div class="bar"><i style="width:{{ '%.1f'|format(r.pct) }}%"></i></div></td></tr>{% endfor %}
+</tbody></table></div></section>
+<div class="tip">Este endereço não aparece em nenhum menu e possui <code>noindex</code>. Ele não usa senha, portanto quem conhecer o link poderá abrir o painel. A API Key permanece somente no servidor.</div>
+{% endif %}
+</main></body></html>

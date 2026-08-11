@@ -1,0 +1,26 @@
+KRJ Connect v2.0.0 - Fundação inicial
+
+SUBSTITUA SOMENTE EM UMA CÓPIA DO PROJETO PRIMEIRO.
+
+Arquivos alterados/novos:
+- main.py
+- empresas.py
+- temas.py              NOVO
+- templates/catalogo.html
+- templates/portal.html NOVO
+- static/css/portal.css NOVO
+
+Teste local:
+1) rode o servidor normalmente
+2) acesse: http://127.0.0.1:8000/vivioke
+3) acesse: http://127.0.0.1:8000/vivioke/catalogo
+   Deve voltar para o portal, pois Vivi Okê está sem módulo catálogo.
+4) acesse: http://127.0.0.1:8000/karaokerj/catalogo
+   Deve abrir o catálogo normalmente.
+
+Importante:
+- Não mexe no catalog.js.
+- Não mexe no catalog.css.
+- Não mexe no db.py.
+- Cria/migra campos da tabela empresas de forma segura.
+- Cria tabela maquinas para futura integração do QR por máquina.

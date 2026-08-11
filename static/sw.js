@@ -1,5 +1,5 @@
 /* static/sw.js */
-const SW_VERSION = "2026-02-08-1"; // mude para forçar update (opcional; base.html já usa ?v=ASSET_V)
+const SW_VERSION = "2026-08-11-2"; // mude para forçar update (opcional; base.html já usa ?v=ASSET_V)
 
 const CACHE_STATIC = `krj-static-${SW_VERSION}`;
 const CACHE_PAGES  = `krj-pages-${SW_VERSION}`;

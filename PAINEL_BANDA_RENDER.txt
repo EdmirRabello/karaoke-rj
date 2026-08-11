@@ -1,0 +1,32 @@
+PAINEL OCULTO DE CONSUMO DA RENDER
+===================================
+
+Link oculto:
+/_krj/uso/7f29c4b8
+
+Exemplo:
+https://SEU-DOMINIO/_krj/uso/7f29c4b8
+
+Configuração necessária na Render:
+1. Abra o serviço > Environment.
+2. Crie a variável RENDER_API_KEY com a API Key criada na sua conta Render.
+3. Opcional: RENDER_SERVICE_ID. Se não informar, usa srv-d6194jpr0fns73fm59fg.
+4. Opcional: RENDER_FREE_BANDWIDTH_GB. Se não informar, usa 5.
+5. Salve e faça o deploy.
+
+O painel mostra:
+- total consumido no mês;
+- HTTP Responses;
+- Service-Initiated/NAT;
+- franquia de 5 GB;
+- excedente;
+- custo estimado do excedente;
+- projeção simples até o fim do mês;
+- total diário em MB;
+- comparação visual entre os dias.
+
+Segurança:
+- não há login/senha, conforme solicitado;
+- o link não aparece nos menus;
+- a página usa noindex/nofollow;
+- a API Key nunca é enviada para o navegador: fica somente no servidor.

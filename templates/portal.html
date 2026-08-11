@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% set page_title = EMPRESA.nome ~ " • Kantus" %}
+{% set page_description = EMPRESA.portal.subtitulo if EMPRESA.portal else "Portal Kantus" %}
+
+{% block head_extra %}
+<style>
+:root{
+    --brand: {{ EMPRESA.tema.cores.brand }};
+    --brand-2: {{ EMPRESA.tema.cores.brand_2 }};
+    --brand-dark: {{ EMPRESA.tema.cores.brand_dark }};
+    --brand-accent: {{ EMPRESA.tema.cores.accent }};
+    --bg: {{ EMPRESA.tema.cores.bg }};
+    --surface: {{ EMPRESA.tema.cores.surface }};
+    --surface-2: {{ EMPRESA.tema.cores.surface_2 }};
+    --text: {{ EMPRESA.tema.cores.text }};
+    --muted: {{ EMPRESA.tema.cores.muted }};
+}
+</style>
+{% endblock %}
+
+{% block page_css %}
+<link rel="stylesheet" href="{{ request.url_for('static', path='css/portal.css') }}?v={{ ASSET_V }}">
+{% endblock %}
+
+{% block content %}
+<main class="kantus-portal {{ EMPRESA.tema.classe }}">
+    <section class="kantus-shell" aria-label="Portal {{ EMPRESA.nome }}">
+
+        <div class="kantus-bg-icons" aria-hidden="true">
+            <span>♪</span><span>★</span><span>♫</span><span>✦</span><span>🎉</span>
+        </div>
+
+        <header class="kantus-topbar">
+            <div class="kantus-product">
+                <span class="kantus-product__dot">{{ EMPRESA.tema.icone }}</span>
+                <span>Kantus</span>
+            </div>
+            <div class="kantus-profile-pill">{{ EMPRESA.perfil|upper }}</div>
+        </header>
+
+        <section class="kantus-hero">
+            <div class="kantus-logo-wrap">
+                {% if EMPRESA.logo %}
+                    <img src="{{ EMPRESA.logo }}" alt="{{ EMPRESA.nome }}" class="kantus-logo">
+                {% else %}
+                    <div class="kantus-logo-placeholder">{{ EMPRESA.nome[:1] }}</div>
+                {% endif %}
+            </div>
+
+            <h1>{{ EMPRESA.nome }}</h1>
+            <p>{{ EMPRESA.portal.subtitulo or EMPRESA.mensagem_popup or "Portal digital da empresa." }}</p>
+        </section>
+
+        <section class="kantus-main-actions" aria-label="Ações principais">
+            {% if EMPRESA.modulos.whatsapp and EMPRESA.redes.whatsapp %}
+            <a class="kantus-action kantus-action--whatsapp"
+               href="https://wa.me/{{ EMPRESA.redes.whatsapp|replace('+','')|replace(' ','')|replace('-','')|replace('(','')|replace(')','') }}?text={{ ('Olá! Vim pelo Kantus da ' ~ EMPRESA.nome)|urlencode }}"
+               target="_blank" rel="noopener noreferrer">
+                <span class="kantus-action__icon"><i class="bi bi-whatsapp"></i></span>
+                <span>
+                    <b>{{ EMPRESA.portal.botao_whatsapp or "Falar no WhatsApp" }}</b>
+                    <small>Atendimento e orçamento</small>
+                </span>
+                <i class="bi bi-chevron-right kantus-action__arrow"></i>
+            </a>
+            {% endif %}
+        </section>
+
+        <section class="kantus-section">
+            <div class="kantus-section__title">
+                <span>Explorar</span>
+                <small>Escolha uma opção</small>
+            </div>
+
+            <div class="kantus-grid-actions">
+                {% if EMPRESA.modulos.catalogo %}
+                <a class="kantus-tile" href="{{ EMPRESA.url_catalogo }}">
+                    <i class="bi bi-music-note-list"></i>
+                    <b>Catálogo</b>
+                    <small>Músicas</small>
+                </a>
+                {% endif %}
+
+                {% if EMPRESA.modulos.pdf and EMPRESA.portal.pdf_url %}
+                <a class="kantus-tile" href="{{ EMPRESA.portal.pdf_url }}" target="_blank" rel="noopener noreferrer">
+                    <i class="bi bi-file-pdf-fill"></i>
+                    <b>PDF</b>
+                    <small>Catálogo</small>
+                </a>
+                {% endif %}
+
+                {% if EMPRESA.modulos.redes and EMPRESA.redes.instagram %}
+                <a class="kantus-tile" href="{{ EMPRESA.redes.instagram }}" target="_blank" rel="noopener noreferrer">
+                    <i class="bi bi-instagram"></i>
+                    <b>Instagram</b>
+                    <small>Fotos</small>
+                </a>
+                {% endif %}
+
+                {% if EMPRESA.modulos.redes and EMPRESA.redes.facebook %}
+                <a class="kantus-tile" href="{{ EMPRESA.redes.facebook }}" target="_blank" rel="noopener noreferrer">
+                    <i class="bi bi-facebook"></i>
+                    <b>Facebook</b>
+                    <small>Rede social</small>
+                </a>
+                {% endif %}
+
+                {% if EMPRESA.modulos.redes and EMPRESA.redes.youtube %}
+                <a class="kantus-tile" href="{{ EMPRESA.redes.youtube }}" target="_blank" rel="noopener noreferrer">
+                    <i class="bi bi-youtube"></i>
+                    <b>YouTube</b>
+                    <small>Vídeos</small>
+                </a>
+                {% endif %}
+
+                {% if EMPRESA.modulos.redes and EMPRESA.redes.tiktok %}
+                <a class="kantus-tile" href="{{ EMPRESA.redes.tiktok }}" target="_blank" rel="noopener noreferrer">
+                    <i class="bi bi-tiktok"></i>
+                    <b>TikTok</b>
+                    <small>Vídeos</small>
+                </a>
+                {% endif %}
+
+                {% if EMPRESA.modulos.redes and EMPRESA.redes.site %}
+                <a class="kantus-tile" href="{{ EMPRESA.redes.site }}" target="_blank" rel="noopener noreferrer">
+                    <i class="bi bi-globe2"></i>
+                    <b>Site</b>
+                    <small>Oficial</small>
+                </a>
+                {% endif %}
+            </div>
+        </section>
+
+        {% if EMPRESA.config and EMPRESA.config.vender_sistema %}
+        <section class="kantus-system-card">
+            <div>
+                <small>Para empresas</small>
+                <b>Quer um portal igual?</b>
+            </div>
+            <a href="https://wa.me/5521996504516?text={{ 'Olá! Quero conhecer a plataforma Kantus.'|urlencode }}" target="_blank" rel="noopener noreferrer">
+                Conhecer
+            </a>
+        </section>
+        {% endif %}
+
+        <footer class="kantus-footer">
+            <span>Powered by <b>Kantus</b></span>
+            <span>© Rabello Tech</span>
+        </footer>
+    </section>
+</main>
+{% endblock %}
