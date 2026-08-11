@@ -25,7 +25,13 @@ app = FastAPI(title="Karaokê RJ • Cantus")
 # ============================================================
 # ✅ 1) VERSÃO DOS ASSETS (para o ?v=... do base.html)
 # ============================================================
-ASSET_V = os.getenv("ASSET_V") or str(int(time.time()))
+# No Render, RENDER_GIT_COMMIT muda a cada deploy. Isso evita que um simples
+# restart do serviço invalide o cache de todos os clientes.
+ASSET_V = (
+    os.getenv("ASSET_V")
+    or os.getenv("RENDER_GIT_COMMIT")
+    or "20260811-offline1"
+)
 
 # ============================================================
 # Compressão (melhora muito no mobile)

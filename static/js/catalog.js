@@ -657,6 +657,7 @@ const KRJ_CATALOG_KEY = `${KRJ_CATALOG_EMPRESA}:${KRJ_CATALOG_RELEASE}`;
 let localCatalogRows = null;
 let localCatalogPromise = null;
 let localCatalogFailed = false;
+let localCatalogPersistent = false;
 
 function openCatalogDB() {
     return new Promise((resolve, reject) => {
@@ -725,6 +726,7 @@ async function ensureLocalCatalog() {
             const cached = await idbGetCatalog(KRJ_CATALOG_KEY);
             if (cached?.items?.length) {
                 localCatalogRows = cached.items;
+                localCatalogPersistent = true;
                 return localCatalogRows;
             }
 
@@ -743,6 +745,7 @@ async function ensureLocalCatalog() {
                     savedAt: Date.now(),
                     items: data.items,
                 });
+                localCatalogPersistent = true;
             } catch (e) {
                 console.warn("Não foi possível persistir o catálogo local:", e);
             }
@@ -812,7 +815,22 @@ async function localSearchCatalog({q = "", tipo = null, plano = null, letter = n
 
 // Começa a preparar o catálogo assim que a tela de consulta abre.
 // Na primeira visita baixa uma vez; nas próximas lê do IndexedDB.
-ensureLocalCatalog().catch(() => {});
+ensureLocalCatalog()
+    .then((rows) => {
+        window.dispatchEvent(new CustomEvent("krj:catalog-ready", {
+            detail: {
+                persistent: localCatalogPersistent,
+                count: Array.isArray(rows) ? rows.length : 0,
+                release: KRJ_CATALOG_RELEASE,
+                empresa: KRJ_CATALOG_EMPRESA,
+            }
+        }));
+    })
+    .catch(() => {
+        window.dispatchEvent(new CustomEvent("krj:catalog-ready", {
+            detail: {persistent: false, count: 0, release: KRJ_CATALOG_RELEASE, empresa: KRJ_CATALOG_EMPRESA}
+        }));
+    });
 
 // ==========================================================
 // Helpers texto / UI

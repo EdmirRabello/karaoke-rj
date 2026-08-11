@@ -1,0 +1,22 @@
+MODO OFFLINE - CATALOGO KARAOKE RJ
+
+Implementado:
+- Catalogo de musicas salvo no IndexedDB por catalogo_release.
+- Tela/JS/CSS essenciais da consulta preparados pelo Service Worker para uso offline.
+- Popup exibido uma vez por aparelho/release quando o modo offline estiver realmente pronto.
+- Aviso MODO OFFLINE quando a conexao cair.
+- Rodape com versao do App, versao do Catalogo e status Online/Offline.
+- App versionado pelo RENDER_GIT_COMMIT para evitar invalidar cache em simples restart.
+- Favoritos, Top 30, envio/pedidos e demais recursos online continuam dependendo de internet.
+
+Teste recomendado:
+1) Com internet, abra /catalogo e aguarde o popup de catalogo pronto para offline.
+2) Feche o popup.
+3) Desative Wi-Fi e dados moveis do celular.
+4) Feche e abra o navegador/PWA novamente na tela do catalogo.
+5) Pesquise musicas. A consulta deve continuar funcionando.
+6) O topo deve mostrar MODO OFFLINE e o rodape deve mostrar as versoes.
+
+Atualizacao:
+- Frontend: muda automaticamente por commit/deploy (RENDER_GIT_COMMIT).
+- Catalogo: so baixa novamente quando catalogo_release mudar.

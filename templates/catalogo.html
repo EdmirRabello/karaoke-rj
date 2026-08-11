@@ -15,10 +15,38 @@
     --brand-dark: {{ EMPRESA.tema.cores.brand_dark }};
     --brand-accent: {{ EMPRESA.tema.cores.accent }};
 }
+
+.krj-offline-banner{
+    display:none; position:sticky; top:0; z-index:9999; padding:9px 14px;
+    background:#fff3cd; color:#664d03; border-bottom:1px solid #ffecb5;
+    text-align:center; font-weight:800; font-size:13px;
+}
+.krj-offline-banner.is-offline{display:block}
+.krj-version-bar{
+    margin:14px auto 84px; max-width:1100px; padding:8px 12px; border-radius:10px;
+    font-size:12px; text-align:center; opacity:.78;
+}
+.krj-version-dot{padding:0 6px; opacity:.5}
+.krj-ready-modal{position:fixed; inset:0; z-index:10050; display:none; align-items:center; justify-content:center; padding:18px}
+.krj-ready-modal.is-open{display:flex}
+.krj-ready-modal__back{position:absolute; inset:0; background:rgba(0,0,0,.62); backdrop-filter:blur(3px)}
+.krj-ready-modal__card{position:relative; width:min(440px,100%); background:#fff; color:#181818; border-radius:20px; padding:24px; box-shadow:0 22px 70px rgba(0,0,0,.35)}
+.krj-ready-modal__icon{font-size:38px; line-height:1; margin-bottom:10px}
+.krj-ready-modal__title{font-size:21px; font-weight:900; margin-bottom:8px}
+.krj-ready-modal__text{font-size:14px; line-height:1.5; margin:0 0 16px}
+.krj-ready-modal__meta{font-size:12px; opacity:.7; margin-bottom:16px}
+.krj-ready-modal__btn{width:100%; border:0; border-radius:12px; padding:12px 16px; font-weight:900; cursor:pointer; background:var(--brand); color:#fff}
+@media (prefers-color-scheme:dark){
+  .krj-ready-modal__card{background:#17191f;color:#f5f5f5}
+}
 </style>
 {% endblock %}
 
 {% block content %}
+
+<div class="krj-offline-banner" id="krjOfflineBanner">
+    MODO OFFLINE — Consulta de músicas disponível. Favoritos, pedidos e outros recursos precisam de internet.
+</div>
 
 <!-- HEADER (mantém seu header sticky do base.css) -->
 <header class="k-header">
@@ -211,6 +239,12 @@
     </div>
 </div>
 
+<div class="krj-version-bar" id="krjVersionBar" aria-label="Informações da versão">
+    App <b id="krjAppVersion">...</b><span class="krj-version-dot">•</span>
+    Catálogo <b id="krjCatalogVersion">...</b><span class="krj-version-dot">•</span>
+    <b id="krjOnlineStatus">Verificando...</b>
+</div>
+
 <!-- APPBAR (MOBILE) — mantém igual -->
 <nav class="appbar" aria-label="Navegação rápida (mobile)">
 
@@ -241,6 +275,115 @@
 
 <script>
     window.KRJ_EMPRESA = {{ EMPRESA | tojson }};
+</script>
+
+<div class="krj-ready-modal" id="krjReadyModal" aria-hidden="true">
+    <div class="krj-ready-modal__back"></div>
+    <div class="krj-ready-modal__card" role="dialog" aria-modal="true" aria-labelledby="krjReadyTitle">
+        <div class="krj-ready-modal__icon">✓</div>
+        <div class="krj-ready-modal__title" id="krjReadyTitle">Seu catálogo está pronto para usar offline</div>
+        <p class="krj-ready-modal__text">
+            As músicas e a tela de consulta foram salvas neste celular. Agora você pode consultar o catálogo mesmo em um sítio ou local sem internet.
+            Favoritos, pedidos, fila e outros recursos online continuam usando conexão.
+        </p>
+        <div class="krj-ready-modal__meta" id="krjReadyMeta"></div>
+        <button class="krj-ready-modal__btn" id="krjReadyClose" type="button">Entendi</button>
+    </div>
+</div>
+
+<script>
+(function(){
+    const appVersionFull = String(window.APP_VERSION || "-");
+    const appVersion = appVersionFull.length > 7 ? appVersionFull.slice(0, 7) : appVersionFull;
+    const catalogVersion = String(window.KRJ_EMPRESA?.catalogo_release || "-");
+    const empresa = String(window.KRJ_EMPRESA?.slug || window.KRJ_EMPRESA?.codigo || "default");
+
+    const banner = document.getElementById("krjOfflineBanner");
+    const status = document.getElementById("krjOnlineStatus");
+    const appEl = document.getElementById("krjAppVersion");
+    const catEl = document.getElementById("krjCatalogVersion");
+    const modal = document.getElementById("krjReadyModal");
+    const close = document.getElementById("krjReadyClose");
+    const meta = document.getElementById("krjReadyMeta");
+
+    if (appEl) appEl.textContent = appVersion;
+    if (catEl) catEl.textContent = catalogVersion;
+
+    function updateConnectivity(){
+        const online = navigator.onLine;
+        banner?.classList.toggle("is-offline", !online);
+        if (status) status.textContent = online ? "Online" : "MODO OFFLINE";
+        document.documentElement.dataset.krjOnline = online ? "1" : "0";
+    }
+    window.addEventListener("online", updateConnectivity);
+    window.addEventListener("offline", updateConnectivity);
+    updateConnectivity();
+
+    close?.addEventListener("click", () => {
+        modal?.classList.remove("is-open");
+        modal?.setAttribute("aria-hidden", "true");
+    });
+
+    function sameOriginAssetUrls(){
+        const out = new Set([location.href]);
+        document.querySelectorAll('link[rel="stylesheet"][href],link[rel="manifest"][href],link[rel="icon"][href],script[src]').forEach(el => {
+            try {
+                const raw = el.href || el.src;
+                const u = new URL(raw, location.href);
+                if (u.origin === location.origin) out.add(u.href);
+            } catch(_) {}
+        });
+        return Array.from(out);
+    }
+
+    async function cacheOfflineShell(){
+        if (!("serviceWorker" in navigator)) throw new Error("Service Worker indisponível");
+        const reg = await navigator.serviceWorker.ready;
+        const worker = reg.active || reg.waiting || reg.installing;
+        if (!worker) throw new Error("Service Worker não ativo");
+
+        return await new Promise((resolve, reject) => {
+            const channel = new MessageChannel();
+            const timer = setTimeout(() => reject(new Error("Timeout ao preparar modo offline")), 20000);
+            channel.port1.onmessage = (ev) => {
+                clearTimeout(timer);
+                ev.data?.ok ? resolve(true) : reject(new Error(ev.data?.error || "Falha ao salvar tela offline"));
+            };
+            worker.postMessage({type:"CACHE_OFFLINE_BUNDLE", urls:sameOriginAssetUrls()}, [channel.port2]);
+        });
+    }
+
+    window.addEventListener("krj:catalog-ready", async (ev) => {
+        const d = ev.detail || {};
+        if (!d.persistent) return; // só promete offline se o catálogo realmente foi gravado
+        try {
+            await cacheOfflineShell();
+            const readyKey = `krj_offline_ready:${empresa}:${catalogVersion}`;
+            const alreadyShown = localStorage.getItem(readyKey) === "1";
+            localStorage.setItem(readyKey, "1");
+            localStorage.setItem(`krj_offline_app:${empresa}`, appVersionFull);
+            localStorage.setItem(`krj_offline_catalog:${empresa}`, catalogVersion);
+
+            if (!alreadyShown && modal) {
+                if (meta) meta.textContent = `App ${appVersion} • Catálogo ${catalogVersion} • ${Number(d.count || 0).toLocaleString("pt-BR")} músicas salvas`;
+                modal.classList.add("is-open");
+                modal.setAttribute("aria-hidden", "false");
+            }
+        } catch (e) {
+            console.warn("Modo offline ainda não ficou pronto:", e);
+        }
+    });
+
+    // Recursos que dependem do servidor: dá uma mensagem clara quando o cliente estiver offline.
+    document.addEventListener("click", (ev) => {
+        if (navigator.onLine) return;
+        const t = ev.target?.closest?.('#btnFavUser,#btnFavUserDesk,#btnTopFav,#btnTopFavDesk,.send-btn,[data-send]');
+        if (!t) return;
+        ev.preventDefault();
+        ev.stopImmediatePropagation();
+        alert("Você está no MODO OFFLINE. A consulta continua funcionando, mas este recurso precisa de internet.");
+    }, true);
+})();
 </script>
 
 <script src="{{ request.url_for('static', path='js/empresa.js') }}?v={{ ASSET_V }}" defer></script>

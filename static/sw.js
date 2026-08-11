@@ -1,8 +1,9 @@
 /* static/sw.js */
-const SW_VERSION = "2026-08-11-2"; // mude para forçar update (opcional; base.html já usa ?v=ASSET_V)
+const SW_VERSION = "2026-08-11-offline-1"; // mude para forçar update (opcional; base.html já usa ?v=ASSET_V)
 
 const CACHE_STATIC = `krj-static-${SW_VERSION}`;
 const CACHE_PAGES  = `krj-pages-${SW_VERSION}`;
+const CACHE_OFFLINE = "krj-offline-shell";
 
 /**
  * ✅ Regra de ouro:
@@ -22,6 +23,30 @@ const STATIC_ASSETS = [
 self.addEventListener("message", (event) => {
   const data = event.data || {};
   if (data.type === "SKIP_WAITING") self.skipWaiting();
+
+  // Prepara explicitamente a tela de consulta para uso sem internet.
+  // Funciona inclusive na primeira visita, antes de o SW controlar a página.
+  if (data.type === "CACHE_OFFLINE_BUNDLE") {
+    const urls = Array.isArray(data.urls) ? data.urls : [];
+    const port = event.ports && event.ports[0];
+    event.waitUntil((async () => {
+      try {
+        const cache = await caches.open(CACHE_OFFLINE);
+        for (const raw of urls) {
+          try {
+            const u = new URL(raw, self.location.origin);
+            if (u.origin !== self.location.origin) continue;
+            const req = new Request(u.href, { credentials: "same-origin" });
+            const res = await fetch(req, { cache: "no-store" });
+            if (res && res.ok) await cache.put(req, res.clone());
+          } catch (_) {}
+        }
+        port && port.postMessage({ok: true});
+      } catch (e) {
+        port && port.postMessage({ok: false, error: String(e)});
+      }
+    })());
+  }
 });
 
 self.addEventListener("install", (event) => {
@@ -40,7 +65,7 @@ self.addEventListener("activate", (event) => {
     const keys = await caches.keys();
     await Promise.all(
       keys
-        .filter((k) => k.startsWith("krj-") && k !== CACHE_STATIC && k !== CACHE_PAGES)
+        .filter((k) => k.startsWith("krj-") && k !== CACHE_STATIC && k !== CACHE_PAGES && k !== CACHE_OFFLINE)
         .map((k) => caches.delete(k))
     );
     await self.clients.claim();
@@ -100,7 +125,9 @@ async function networkFirst(req) {
     return fresh;
   } catch {
     const cached = await cache.match(req);
-    return cached || Response.error();
+    if (cached) return cached;
+    const offline = await caches.open(CACHE_OFFLINE);
+    return (await offline.match(req)) || Response.error();
   }
 }
 
@@ -120,7 +147,9 @@ async function networkFirstStatic(req, cacheName) {
     return fresh;
   } catch {
     const cached = await cache.match(req);
-    return cached || Response.error();
+    if (cached) return cached;
+    const offline = await caches.open(CACHE_OFFLINE);
+    return (await offline.match(req)) || Response.error();
   }
 }
 
