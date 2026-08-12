@@ -434,7 +434,7 @@ def _empresa_existe(slug: str) -> bool:
 
 
 def criar_empresa_padrao():
-    """Garante a Karaokê RJ e a primeira empresa demo do KRJ Connect."""
+    """Garante somente a empresa principal Karaoke RJ."""
 
     if not _empresa_existe("karaokerj"):
         execute("""
@@ -459,28 +459,7 @@ def criar_empresa_padrao():
             1
         ])
 
-    if not _empresa_existe("vivioke"):
-        execute("""
-            INSERT INTO empresas
-            (dominio, nome, slug, titulo_popup, mensagem_popup, redes, config,
-             tema, perfil, catalogo_nivel, catalogo_release, modulos, portal, ativo)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """, [
-            "vivioke.eu.org",
-            "Vivi Okê",
-            "vivioke",
-            "Vivi Okê",
-            "Diversão, música e alegria para sua festa.",
-            '{"whatsapp":"5521996504516","instagram":"","facebook":"","tiktok":"","youtube":"","site":""}',
-            '{"popup":true,"mostrar_logo":true}',
-            "party",
-            "portal",
-            "BASICO",
-            202606,
-            '{"portal":true,"redes":true,"whatsapp":true,"pdf":true,"catalogo":false,"qr":false}',
-            '{"headline":"Vivi Okê","subtitulo":"Diversão, música e alegria para sua festa.","botao_whatsapp":"Solicitar orçamento","botao_pdf":"Ver PDF","pdf_url":""}',
-            1
-        ])
+
 
 
 def criar_maquina_demo():
